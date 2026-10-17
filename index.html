@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <title>貓咪小屋｜養貓、上學、解謎</title>
+    <title>貓咪夢工廠｜養貓、上學、長大</title>
     <meta name="theme-color" content="#2f6f63" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./style.css?v=20261004" />
@@ -12,16 +12,14 @@
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="貓咪小屋" />
+    <meta name="apple-mobile-web-app-title" content="貓咪夢工廠" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   </head>
   <body>
     <header class="topbar">
-      <h1><span>🐾</span> 貓咪小屋</h1>
+      <h1><span>🐾</span> 貓咪夢工廠</h1>
       <nav class="toolbar">
-        <button id="homeBtn" hidden>🏠 回貓屋</button
-        ><button id="puzzleBtn" hidden>🧩 數獨打工</button
-        ><button id="themeBtn" title="切換深色／淺色">🌙</button
+        <button id="themeBtn" title="切換深色／淺色">🌙</button
         ><div class="audio-ctrl-wrap">
           <button id="audioBtn" class="audio-btn" title="聲音設定（點擊快速靜音／長按或右鍵展開細調）" aria-label="聲音設定">🔊</button>
           <div id="audioPopup" class="audio-popup hidden" role="dialog" aria-label="音訊設定">
@@ -44,41 +42,6 @@
       <section class="card" id="petView"></section>
     </main>
 
-    <!-- 小遊戲：貓咪邏輯謎題（數獨打工） -->
-    <main id="puzzleScreen" class="screen" hidden>
-      <p class="sub">
-        每個色塊 1 隻貓・每列 1 隻・每行 1 隻・貓不能相鄰（含斜角）<br />每題唯一解，純靠邏輯推導，不用猜
-      </p>
-      <section class="card levels">
-        <button data-n="5">5×5 簡單</button><button data-n="7">7×7 普通</button
-        ><button data-n="9">9×9 困難</button><button id="dailyBtn">📅 每日挑戰</button
-        ><button id="skinBtn" title="更換貓咪圖示"><span id="skinBtnLabel">🐱 換貓</span></button>
-      </section>
-      <section class="card">
-        <div class="status">
-          <span class="hearts" id="hearts">🐟🐟🐟</span><span>⏱ <b id="timer">00:00</b></span
-          ><span>🐱 <b id="progress">0/5</b></span
-          ><span id="bestLabel">🏆 --:--</span>
-        </div>
-      </section>
-      <section class="card boardWrap">
-        <div class="board" id="board" role="grid" aria-label="謎題盤面"></div>
-      </section>
-      <section class="card controls">
-        <button id="modeMarkBtn" class="on">✕ 排除</button><button id="modeCatBtn">🐱 放貓</button
-        ><button id="hintBtn" aria-label="顯示提示">💡 提示</button
-        ><button id="undoBtn" aria-label="復原上一步">↶ 復原</button
-        ><button id="autoXBtn" class="on">自動打叉</button><button id="restartBtn">↻ 重來</button
-        ><button id="newBtn" class="primary">🎲 新題目</button>
-      </section>
-      <footer>
-        <p>
-          點格子＝依目前模式動作；<b>長按或右鍵</b>可清除單格。放錯貓會扣 1 條小魚乾。<br />鍵盤：<kbd>方向鍵</kbd>移動、<kbd>X</kbd>
-          打叉、<kbd>C</kbd> 放貓、<kbd>Backspace</kbd> 清除。
-        </p>
-      </footer>
-    </main>
-
     <div class="overlay hidden" id="overlay">
       <div class="sheet">
         <h2 id="overlayTitle">完成！</h2>
@@ -88,9 +51,6 @@
           ><button id="overlaySecondary">關閉</button>
         </div>
       </div>
-    </div>
-    <div class="loading hidden" id="loading">
-      <span class="spin"></span><span id="loadingText">生成題目中…</span>
     </div>
     <script type="module" src="./js/main.js?v=20261004"></script>
   </body>

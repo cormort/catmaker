@@ -1,6 +1,6 @@
 // academy.js — 學院排課測驗（題庫來自 quizzes/，見 js/quiz.js）、能力象限與日常照護
 import { audio } from "../audio.js";
-import { activePetKey, addCoins, addPetStat, celebrateChapter, growthStage, petAffection, petData, petLevel, petName, petQuickStatusBarHtml, petStats, petStatus, petSubnavHtml, primaryTitle, recordStoryEvent, savePetData, setPetView, showPetHome, studyBuff, updatePetStatus } from "./pet.js";
+import { activePetKey, addCoins, addEventProgress, addPetStat, awardFood, rewardHtml, celebrateChapter, growthStage, petAffection, petData, petLevel, petName, petQuickStatusBarHtml, petStats, petStatus, petSubnavHtml, primaryTitle, recordStoryEvent, savePetData, setPetView, showPetHome, studyBuff, updatePetStatus } from "./pet.js";
 import { showClinic, sickInfo, startCare } from "./life.js";
 import { GRADES, PUBLISHERS, QUIZ_SUBJECTS, TERMS, TEXTBOOK_UNITS, buildExamQuestions, calculateQuizResult, exportMistakes, filterCount, gradeRewardMul, importMistakes, isCorrect, mistakeCounts, mistakesFor, mistakesToQuestions, pickRound, recordMistake, termInfo, unitsFor } from "./quiz.js";
 import { STORY, currentChapter, examPassed, normalizeStory } from "./story.js";
@@ -308,14 +308,6 @@ export function academyPageHtml(key = activePetKey()) {
       ${picker}
       <div class="academy-grid">
         ${cards}
-        <div class="academy-card academy-work-card">
-          <div class="academy-card-head">
-            <span class="academy-card-title">🧩 數獨打工兼職・邏輯特訓</span>
-            <span class="academy-stat-val" style="background:#fef3c7; color:#b45309;">金幣 +60~200</span>
-          </div>
-          <div class="academy-desc">在數獨謎題中擔任貓咪小助手，每完成一局立即賺取大量金幣與算術邏輯屬性！</div>
-          <button class="academy-action-btn" style="background:#d97706;" data-close-to-game="true">前往數獨打工 🐾</button>
-        </div>
       </div>
       ${unitPanel}
       ${mistakeBookHtml()}
@@ -623,6 +615,10 @@ function finishQuizSession() {
     hunger: -res.hungerCost,
     fatigue: res.fatigueGain,
   });
+  // 原本數獨打工給的食物、解鎖新貓、活動任務，改由完成測驗給（隨堂＝簡單、考試＝普通的掉落表）
+  const food = awardFood({ n: examState ? 7 : 5, daily: false });
+  addEventProgress("wins", 1);
+  if (examState) addEventProgress("hard", 1);
 
   // 主線任務：答對題數（錯題複習記在錯題重練、考試記在考試通過）
   try {
@@ -695,6 +691,7 @@ function finishQuizSession() {
       <div style="font-size:0.72rem; color:var(--muted); line-height:1.4;">
         體力 -${res.staminaCost}⚡ · 飽食 -${res.hungerCost}🍖 · 疲勞 +${res.fatigueGain}💤
       </div>
+      ${rewardHtml(food)}
     </div>
   `;
 

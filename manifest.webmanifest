@@ -1,7 +1,7 @@
 {
-  "name": "貓咪小屋",
-  "short_name": "貓咪小屋",
-  "description": "養貓小屋：照顧貓咪、上學測驗、解邏輯謎題",
+  "name": "貓咪夢工廠",
+  "short_name": "貓咪夢工廠",
+  "description": "美少女夢工廠風的養成遊戲：照顧貓咪、上學考試、一路長大",
   "lang": "zh-Hant-TW",
   "start_url": "./",
   "scope": "./",

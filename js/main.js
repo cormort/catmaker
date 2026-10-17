@@ -1,8 +1,5 @@
-// main.js — 進入點：貓咪小屋是首頁，數獨是小屋裡的小遊戲（以網址 hash 切換，手機返回鍵可用）
-//   #/           貓咪小屋（小屋、學院、屬性、商店、扭蛋、稱號、紀念、活動）
-//   #/meowdoku   貓咪邏輯謎題（數獨打工）
+// main.js — 進入點：貓咪夢工廠（小屋、學院、屬性、商店、扭蛋、稱號、紀念、活動）
 import { audio } from "../audio.js";
-import { enterPuzzle, initPuzzle, leavePuzzle, renderBoard } from "./meowdoku.js";
 import { startLife } from "./life.js";
 import { petData, showPetHome, showStarterSetup, syncGrowthStages } from "./pet.js?v=20261004";
 import { loadSubjects, loadUnits } from "./quiz.js";
@@ -12,31 +9,18 @@ const subjectsReady = Promise.all([loadSubjects(), loadUnits()]).catch((err) =>
   console.error("讀取題庫失敗", err),
 );
 
-let currentScreen = null;
 function route() {
-  const next = location.hash === "#/meowdoku" ? "puzzle" : "home";
-  if (currentScreen === "puzzle" && next !== "puzzle") leavePuzzle();
   hideSheet();
-  currentScreen = next;
-  $("homeScreen").hidden = next !== "home";
-  $("puzzleScreen").hidden = next !== "puzzle";
-  $("homeBtn").hidden = next === "home";
-  $("puzzleBtn").hidden = next === "puzzle";
-  if (next === "puzzle") enterPuzzle();
-  else showPetHome();
-  // 各場景配樂：數獨打工有專屬曲，其餘分頁（小屋／出門／商店…）用小屋的主題曲
-  audio.setScene(next === "puzzle" ? "puzzle" : "room");
+  showPetHome();
+  audio.setScene("room");
   scrollTo(0, 0);
 }
 
-$("homeBtn").onclick = () => (location.hash = "");
-$("puzzleBtn").onclick = () => (location.hash = "#/meowdoku");
 $("themeBtn").onclick = () => {
   const dark = document.documentElement.dataset.theme !== "dark";
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   localStorage.setItem(LS.theme, dark ? "dark" : "light");
   $("themeBtn").textContent = dark ? "☀️" : "🌙";
-  renderBoard();
 };
 $("overlay").addEventListener("click", (e) => {
   if (e.target === $("overlay")) hideSheet();
@@ -176,9 +160,7 @@ document.addEventListener(
 window.addEventListener("hashchange", route);
 
 (async function boot() {
-  // 介面採美少女夢工廠風格：整體是暗色的和室／木框，固定使用 dark 主題
-  // （dark 主題同時決定數獨色塊的暗色盤，淺色盤在這個介面上會太亮）
-  // 預設亮色（可自行切換夜間模式）；不再強制深色
+  // 預設亮色（可自行切換夜間模式）
   const savedTheme = localStorage.getItem(LS.theme);
   document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";
   const themeBtnEl = $("themeBtn");
@@ -186,9 +168,6 @@ window.addEventListener("hashchange", route);
     themeBtnEl.hidden = false;
     themeBtnEl.textContent = savedTheme === "dark" ? "☀️" : "🌙";
   }
-  initPuzzle(
-    petData.initialized ? localStorage.getItem(LS.skin) || petData.selected || "0" : "emoji",
-  );
   startLife();
   if (petData.initialized) syncGrowthStages();
   else setTimeout(showStarterSetup, 180);

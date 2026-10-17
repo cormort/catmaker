@@ -133,7 +133,7 @@ function treat() {
   const cure = CURES[ill.cure];
   if (!pillPaid) {
     if (petCoins() < cure.cost) {
-      showSheet("金幣不足 🪙", `${cure.name}需要 ${cure.cost} 金幣喵！先去學院上課或數獨打工賺錢吧。`, "知道了");
+      showSheet("金幣不足 🪙", `${cure.name}需要 ${cure.cost} 金幣喵！先去學院上課賺錢吧。`, "知道了");
       return;
     }
     addCoins(-cure.cost);

@@ -229,7 +229,7 @@ export function pullGacha(count, useScraps = false) {
     if ((petData.ticketScraps || 0) < SCRAPS_PER_TICKET) return;
     petData.ticketScraps -= SCRAPS_PER_TICKET;
   } else if (petCoins() < cost) {
-    showSheet("金幣不足 🪙", `扭蛋需要 ${cost} 金幣喵！請先前往「學院」排課測驗或「數獨打工」賺取金幣！`, "前往學院", () => setPetView("academy"));
+    showSheet("金幣不足 🪙", `扭蛋需要 ${cost} 金幣喵！請先前往「學院」排課測驗賺取金幣！`, "前往學院", () => setPetView("academy"));
     return;
   }
 

@@ -3,7 +3,6 @@ import { audio } from "../audio.js";
 import { academyPageHtml, clearMistakeBook, handleDailyCare, handleQuizAnswer, openMistakeExport, openMistakeImport, setQuizPublisher, setQuizTerm, startExamSession, startMistakeSession, startQuizSession, statsPageHtml } from "./academy.js";
 import { DIRT_LABEL, STORY, STUDY_BUFF_MINUTES, STUDY_BUFF_RATE, TALK_CHOICES, applyEvent, currentChapter, dirtLevel, newStoryState, normalizeStory, reminderLine, storyFinished, talkLines, taskProgress, timeGreeting } from "./story.js";
 import { AVATAR_PARTS, avatarLabel, defaultAvatar, gradeOfTerm, normalizeAvatar, randomAvatar, renderAvatar, stageLabel } from "./avatar.js";
-import { facePos, setSkin } from "./meowdoku.js";
 import { bindRoomStageInteractions, captureRoomPhoto, getRoomCatSprite, renderRoomLitter, roomCatPose, roomLitterClumps, roomToolMode, scoopLitterClump, setRoomCatPose, setRoomToolMode, spawnRoomHeart, triggerWandPlay } from "./room.js";
 import { buyShopItem, gachaPageHtml, pullGacha, setShopTab, shopPageHtml } from "./shop.js";
 import { handleLifeEvent, sickInfo } from "./life.js";
@@ -18,8 +17,6 @@ const FOODS = {
 const PET_LEVELS = [0, 20, 55, 105, 170, 250, 350, 470, 610, 770];
 // 可互動的貓：小屋只有這 4 隻（白貓 / 橘貓 / 黑貓 / 三花），每個品種都有 14 種全身姿勢立繪。
 // 臉圖示刻意挑與品種相符的（icons/cats.webp 第 0 / 2 / 1 / 4 張），
-// 這樣數獨裡看到的臉跟小屋裡的貓是同一隻。
-// ⚠ 數獨「🐱 換貓」那 81 個圖示是另一套、跟這份名單無關（見 js/meowdoku.js showSkinPicker）。
 export const INTERACTIVE_CATS = ["0", "2", "1", "4"];
 const CAT_LABELS = { "0": "白貓", "2": "橘貓", "1": "黑貓", "4": "三花" };
 // 舊存檔的 key 可能不在名單內：先用舊對應表換算品種，再取同名單品種的 key
@@ -46,8 +43,12 @@ function normalizeCatKey(key) {
     LEGACY_BREED_BY_KEY[k] || ["white", "orange", "calico", "black"][(Number(k) || 0) % 4];
   return ROSTER_BY_BREED[breed] || INTERACTIVE_CATS[0];
 }
+// 貓臉 sprite（icons/cats.webp，9×9 格）的座標
+function facePos(k) {
+  return `${(k % 9) * 12.5}% ${Math.floor(k / 9) * 12.5}%`;
+}
 const STARTER_CATS = INTERACTIVE_CATS;
-// 其餘 3 隻隨合作過關數解鎖
+// 其餘 3 隻隨完成測驗次數解鎖
 const UNLOCK_WINS = {
   2: 3,
   1: 8,
@@ -76,7 +77,7 @@ export function growthStage(value = petAffection()) {
 const TITLE_RULES = [
   {
     name: "初次搭檔",
-    label: "與貓咪合作完成 1 關",
+    label: "和貓咪完成 1 次測驗",
     value: (k) => petRecord(k).total,
     target: 1,
   },
@@ -118,13 +119,13 @@ const TITLE_RULES = [
   },
   {
     name: "百戰夥伴",
-    label: "累積合作完成 50 關",
+    label: "累積完成 50 次測驗",
     value: (k) => petRecord(k).total,
     target: 50,
   },
   {
     name: "傳奇拍檔",
-    label: "累積合作完成 100 關",
+    label: "累積完成 100 次測驗",
     value: (k) => petRecord(k).total,
     target: 100,
   },
@@ -426,7 +427,7 @@ export function showStarterSetup() {
   let selected = STARTER_CATS[0];
   $("overlayTitle").textContent = "🐾 領養第一隻貓";
   $("overlayBody").innerHTML =
-    `<p class="starter-intro">小屋一共有 4 隻可以互動的貓咪，每一隻都有自己的全身動作立繪。先選一隻當夥伴，其他 3 隻會在合作過關後陸續認識。</p><div class="starter-preview-stage"><img id="starterPreviewImg" class="room-cat-img" src="${getRoomCatSprite(selected, "idle")}" alt="候選貓咪" onerror="this.onerror=null; this.src=this.src.replace('.webp', '.png');"></div><div class="starter-cats">${STARTER_CATS.map((k) => `<button class="starter-cat${k === selected ? " selected" : ""}" data-starter="${k}">${petFaceHtml(k, "face")}<span class="starter-name">${CAT_LABELS[k] || `貓咪 ${Number(k) + 1}`}</span></button>`).join("")}</div><label class="name-field"><span>替貓咪取名字</span><input id="starterName" maxlength="12" placeholder="輸入 1～12 個字" autocomplete="off"></label>`;
+    `<p class="starter-intro">小屋一共有 4 隻可以互動的貓咪，每一隻都有自己的全身動作立繪。先選一隻當夥伴，其他 3 隻會在完成學院測驗後陸續認識。</p><div class="starter-preview-stage"><img id="starterPreviewImg" class="room-cat-img" src="${getRoomCatSprite(selected, "idle")}" alt="候選貓咪" onerror="this.onerror=null; this.src=this.src.replace('.webp', '.png');"></div><div class="starter-cats">${STARTER_CATS.map((k) => `<button class="starter-cat${k === selected ? " selected" : ""}" data-starter="${k}">${petFaceHtml(k, "face")}<span class="starter-name">${CAT_LABELS[k] || `貓咪 ${Number(k) + 1}`}</span></button>`).join("")}</div><label class="name-field"><span>替貓咪取名字</span><input id="starterName" maxlength="12" placeholder="輸入 1～12 個字" autocomplete="off"></label>`;
   const primary = $("overlayPrimary");
   primary.textContent = "開始一起冒險";
   primary.onclick = () => {
@@ -447,7 +448,6 @@ export function showStarterSetup() {
     petData.petView = "home";
     savePetData();
     hideSheet();
-    setSkin(selected);
     showPetHome();
   };
   $("overlaySecondary").style.display = "none";
@@ -502,7 +502,7 @@ export function awardFood({ n, daily }) {
   return { gained, key, affection: gain, unlocked };
 }
 export function rewardHtml(r) {
-  return `<div class="reward-box"><b>🎁 過關獎勵</b><div class="reward-foods">${Object.entries(
+  return `<div class="reward-box"><b>🎁 額外獎勵</b><div class="reward-foods">${Object.entries(
     r.gained,
   )
     .map(
@@ -659,8 +659,8 @@ const EVENT_MISSIONS = [
   {
     id: "wins",
     icon: "🧩",
-    name: "節日解謎",
-    desc: "活動期間完成 3 關",
+    name: "節日讀書",
+    desc: "活動期間完成 3 次測驗",
     target: 3,
     value: () => eventRecord().wins,
     reward: "🐟×2",
@@ -669,7 +669,7 @@ const EVENT_MISSIONS = [
     id: "hard",
     icon: "⭐",
     name: "挑戰高手",
-    desc: "完成 1 關普通或困難",
+    desc: "完成 1 場考試",
     target: 1,
     value: () => eventRecord().hard,
     reward: "🥫×1",
@@ -784,7 +784,7 @@ export function pmTopHtml(key = activePetKey()) {
     <div class="pm-strip"><span>🐾 ${escapeHtml(petName(key))}</span><span>${stage.icon} ${stage.name}・Lv.${level}</span></div>
     <div class="pm-faceline">
       <i class="face" style="background-position:${face}"></i>
-      <div class="pm-bubble">${mood.icon} ${mood.label}・合作 ${petRecord(key).total} 場${st.sick ? "・😿 生病中" : ""}</div>
+      <div class="pm-bubble">${mood.icon} ${mood.label}・測驗 ${petRecord(key).total} 次${st.sick ? "・😿 生病中" : ""}</div>
     </div>
     <div class="pm-goldrow">
       <span class="pm-label">GOLD</span><span class="pm-vals">${petCoins()} G</span>
@@ -812,7 +812,6 @@ export function pmTilesHtml() {
   ).join("")}
     <button class="pm-bigbtn pm-hero-btn" data-avatar-open="1">🧍 我的角色（換裝・${stageLabel(avatarGrade())}）</button>
     <button class="pm-bigbtn" data-pet-view="trip">🎒 帶貓咪出門</button>
-    <button class="pm-bigbtn" data-goto-puzzle="1">🧩 數獨打工</button>
   </div>`;
 }
 export function petSubnavHtml(view) {
@@ -1257,7 +1256,7 @@ export function showPetHome() {
     .map((t) => `<span class="mini-title">${t}</span>`)
     .join(
       "",
-    )}</div>${titleConditionsHtml(key)}<div class="mood-row"><span class="mood-pill">${mood.icon} ${mood.label}</span><span class="mood-val">心情 ${petMoodValue(key)}/100</span></div><div class="affection-bar"><div class="affection-fill" style="--affection:${progress}%"></div></div><div class="pet-affection">💕 好感度 ${aff}${level < PET_LEVELS.length ? `／${PET_LEVELS[level]}` : "（最高等級）"}</div>${growthTrackHtml(key)}<div class="rename-row"><input id="renameInput" maxlength="12" value="${escapeHtml(petName(key))}"><button data-rename>改名</button></div></div><div class="daily-feed"><span><b>📅 每日餵食獎勵</b><small>${dailyFeedAvailable() ? "今天可領取小魚乾與好感度" : "今天已經領過了"}</small></span><button data-daily-feed ${dailyFeedAvailable() ? "" : "disabled"}>${dailyFeedAvailable() ? "領取" : "已領取"}</button></div><div class="pet-stats"><div class="pet-stat"><b>${rec.total}</b><small>合作關卡</small></div><div class="pet-stat"><b>${rec.easy}/${rec.normal}/${rec.hard}</b><small>簡單／普通／困難</small></div><div class="pet-stat"><b>${rec.daily}</b><small>每日挑戰</small></div></div><div class="food-grid">${Object.entries(
+    )}</div>${titleConditionsHtml(key)}<div class="mood-row"><span class="mood-pill">${mood.icon} ${mood.label}</span><span class="mood-val">心情 ${petMoodValue(key)}/100</span></div><div class="affection-bar"><div class="affection-fill" style="--affection:${progress}%"></div></div><div class="pet-affection">💕 好感度 ${aff}${level < PET_LEVELS.length ? `／${PET_LEVELS[level]}` : "（最高等級）"}</div>${growthTrackHtml(key)}<div class="rename-row"><input id="renameInput" maxlength="12" value="${escapeHtml(petName(key))}"><button data-rename>改名</button></div></div><div class="daily-feed"><span><b>📅 每日餵食獎勵</b><small>${dailyFeedAvailable() ? "今天可領取小魚乾與好感度" : "今天已經領過了"}</small></span><button data-daily-feed ${dailyFeedAvailable() ? "" : "disabled"}>${dailyFeedAvailable() ? "領取" : "已領取"}</button></div><div class="pet-stats"><div class="pet-stat"><b>${rec.total}</b><small>完成測驗</small></div><div class="pet-stat"><b>${rec.easy}/${rec.normal}</b><small>隨堂／考試</small></div></div><div class="food-grid">${Object.entries(
     FOODS,
   )
     .map(
@@ -1266,7 +1265,7 @@ export function showPetHome() {
     )
     .join(
       "",
-    )}</div></div><div class="pm-panel pm-detail"><div class="pet-collection-title"><span>📖 貓咪圖鑑 ${petData.unlocked.length}/${INTERACTIVE_CATS.length}</span><small>合作過關可認識新貓咪</small></div><div class="collection-tools"><label>篩選<select data-collection-filter><option value="all" ${collectionFilter === "all" ? "selected" : ""}>全部貓咪</option><option value="unlocked" ${collectionFilter === "unlocked" ? "selected" : ""}>已解鎖</option><option value="locked" ${collectionFilter === "locked" ? "selected" : ""}>未解鎖</option><option value="raised" ${collectionFilter === "raised" ? "selected" : ""}>培養中</option>${GROWTH_STAGES.map((g, i) => `<option value="stage-${i}" ${collectionFilter === `stage-${i}` ? "selected" : ""}>${g.icon} ${g.name}</option>`).join("")}</select></label><label>排序<select data-collection-sort><option value="index" ${collectionSort === "index" ? "selected" : ""}>圖鑑編號</option><option value="name" ${collectionSort === "name" ? "selected" : ""}>名稱</option><option value="stage" ${collectionSort === "stage" ? "selected" : ""}>成長階段</option><option value="level" ${collectionSort === "level" ? "selected" : ""}>等級高到低</option><option value="affection" ${collectionSort === "affection" ? "selected" : ""}>好感度高到低</option><option value="cooperation" ${collectionSort === "cooperation" ? "selected" : ""}>合作關卡多到少</option></select></label><div class="collection-saved-note">✓ 篩選與排序會自動保存</div></div><div class="pet-collection">${
+    )}</div></div><div class="pm-panel pm-detail"><div class="pet-collection-title"><span>📖 貓咪圖鑑 ${petData.unlocked.length}/${INTERACTIVE_CATS.length}</span><small>完成測驗可認識新貓咪</small></div><div class="collection-tools"><label>篩選<select data-collection-filter><option value="all" ${collectionFilter === "all" ? "selected" : ""}>全部貓咪</option><option value="unlocked" ${collectionFilter === "unlocked" ? "selected" : ""}>已解鎖</option><option value="locked" ${collectionFilter === "locked" ? "selected" : ""}>未解鎖</option><option value="raised" ${collectionFilter === "raised" ? "selected" : ""}>培養中</option>${GROWTH_STAGES.map((g, i) => `<option value="stage-${i}" ${collectionFilter === `stage-${i}` ? "selected" : ""}>${g.icon} ${g.name}</option>`).join("")}</select></label><label>排序<select data-collection-sort><option value="index" ${collectionSort === "index" ? "selected" : ""}>圖鑑編號</option><option value="name" ${collectionSort === "name" ? "selected" : ""}>名稱</option><option value="stage" ${collectionSort === "stage" ? "selected" : ""}>成長階段</option><option value="level" ${collectionSort === "level" ? "selected" : ""}>等級高到低</option><option value="affection" ${collectionSort === "affection" ? "selected" : ""}>好感度高到低</option><option value="cooperation" ${collectionSort === "cooperation" ? "selected" : ""}>完成測驗多到少</option></select></label><div class="collection-saved-note">✓ 篩選與排序會自動保存</div></div><div class="pet-collection">${
     cats.length
       ? cats
           .map((k) => {
@@ -1425,7 +1424,6 @@ function selectPet(key) {
   if (!isUnlocked(key)) return;
   petData.selected = String(key);
   savePetData();
-  setSkin(String(key));
   showPetHome();
 }
 function renamePet() {
@@ -1474,11 +1472,6 @@ function onPetClick(e) {
   const view = e.target.closest("[data-pet-view]");
   if (view) {
     setPetView(view.dataset.petView);
-    return;
-  }
-  const puzzleGo = e.target.closest("[data-goto-puzzle]");
-  if (puzzleGo) {
-    location.hash = "#/meowdoku";
     return;
   }
   if (handleTripClick(e)) return;
@@ -1619,11 +1612,6 @@ function onPetClick(e) {
     if (tag) tag.textContent = poseCard.dataset.poseLabel || "";
     document.querySelectorAll(".pose-card.active").forEach((b) => b.classList.remove("active"));
     poseCard.classList.add("active");
-    return;
-  }
-  const closeToGame = e.target.closest("[data-close-to-game]");
-  if (closeToGame) {
-    location.hash = "#/meowdoku";
     return;
   }
   const saveDates = e.target.closest("[data-save-dates]");
