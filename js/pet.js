@@ -1,12 +1,14 @@
 // pet.js — 貓咪小屋（首頁）：養成資料、客廳、圖鑑、稱號、紀念日、節日活動，以及各分頁的切換與點擊委派
 import { audio } from "../audio.js";
-import { academyPageHtml, clearMistakeBook, handleDailyCare, handleQuizAnswer, openMistakeExport, openMistakeImport, setQuizPublisher, setQuizTerm, startExamSession, startMistakeSession, startQuizSession, statsPageHtml } from "./academy.js";
+import { academyPageHtml, clearMistakeBook, handleDailyCare, handleQuizAnswer, openMistakeExport, openMistakeImport, setQuizPublisher, setQuizTerm, startMistakeSession, startQuizSession, statsPageHtml } from "./academy.js";
 import { DIRT_LABEL, STORY, STUDY_BUFF_MINUTES, STUDY_BUFF_RATE, TALK_CHOICES, applyEvent, currentChapter, dirtLevel, newStoryState, normalizeStory, reminderLine, storyFinished, talkLines, taskProgress, timeGreeting } from "./story.js";
-import { AVATAR_PARTS, avatarLabel, defaultAvatar, gradeOfTerm, normalizeAvatar, randomAvatar, renderAvatar, stageLabel } from "./avatar.js";
+import { AVATAR_PARTS, avatarLabel, defaultAvatar, normalizeAvatar, randomAvatar, renderAvatar, stageLabel } from "./avatar.js";
 import { bindRoomStageInteractions, captureRoomPhoto, getRoomCatSprite, renderRoomLitter, roomCatPose, roomLitterClumps, roomToolMode, scoopLitterClump, setRoomCatPose, setRoomToolMode, spawnRoomHeart, triggerWandPlay } from "./room.js";
 import { buyShopItem, gachaPageHtml, pullGacha, setShopTab, shopPageHtml } from "./shop.js";
 import { handleLifeEvent, sickInfo } from "./life.js";
-import { handleTripClick, tripPageHtml } from "./trip.js";
+import { tripPageHtml } from "./trip.js";
+import { handleScheduleClick, raiseMonth, schedulePageHtml } from "./schedule.js";
+import { examMonth, monthInfo } from "./raise.js";
 import { $, LS, escapeHtml, hideSheet, localDay, playSkinArrivalSound, showSheet } from "./ui.js";
 const FOODS = {
   fish: { icon: "🐟", name: "小魚乾", affection: 4, mood: 4 },
@@ -811,11 +813,11 @@ export function pmTilesHtml() {
       }<b>${icon}</b><small>${label}</small></button>`,
   ).join("")}
     <button class="pm-bigbtn pm-hero-btn" data-avatar-open="1">🧍 我的角色（換裝・${stageLabel(avatarGrade())}）</button>
-    <button class="pm-bigbtn" data-pet-view="trip">🎒 帶貓咪出門</button>
+    <button class="pm-bigbtn" data-pet-view="schedule">📅 排行程（${escapeHtml(monthInfo(raiseMonth()).label)}）</button>
   </div>`;
 }
 export function petSubnavHtml(view) {
-  return `<div class="pet-subnav"><button data-pet-view="home" class="${view === "home" ? "active" : ""}">🏠 小屋</button><button data-pet-view="trip" class="${view === "trip" ? "active" : ""}">🎒 出門</button><button data-pet-view="academy" class="${view === "academy" ? "active" : ""}">📚 學院</button><button data-pet-view="stats" class="${view === "stats" ? "active" : ""}">📊 屬性</button><button data-pet-view="shop" class="${view === "shop" ? "active" : ""}">🛍️ 商店</button><button data-pet-view="gacha" class="${view === "gacha" ? "active" : ""}">🎰 扭蛋</button><button data-pet-view="titles" class="${view === "titles" ? "active" : ""}">🏅 稱號</button><button data-pet-view="dates" class="${view === "dates" ? "active" : ""}">🎂 紀念</button><button data-pet-view="events" class="${view === "events" ? "active" : ""}">🎊 活動</button></div>`;
+  return `<div class="pet-subnav"><button data-pet-view="home" class="${view === "home" ? "active" : ""}">🏠 小屋</button><button data-pet-view="schedule" class="${view === "schedule" ? "active" : ""}">📅 行程</button><button data-pet-view="trip" class="${view === "trip" ? "active" : ""}">📸 相簿</button><button data-pet-view="academy" class="${view === "academy" ? "active" : ""}">📚 學院</button><button data-pet-view="stats" class="${view === "stats" ? "active" : ""}">📊 屬性</button><button data-pet-view="shop" class="${view === "shop" ? "active" : ""}">🛍️ 商店</button><button data-pet-view="gacha" class="${view === "gacha" ? "active" : ""}">🎰 扭蛋</button><button data-pet-view="titles" class="${view === "titles" ? "active" : ""}">🏅 稱號</button><button data-pet-view="dates" class="${view === "dates" ? "active" : ""}">🎂 紀念</button><button data-pet-view="events" class="${view === "events" ? "active" : ""}">🎊 活動</button></div>`;
 }
 function eventKey() {
   const f = activeFestival();
@@ -1005,8 +1007,8 @@ export function recordStoryEvent(type, n = 1) {
   savePetData();
   return { story, completed: null };
 }
-export function celebrateChapter(completed) {
-  if (!completed) return;
+export function celebrateChapter(completed, then = null) {
+  if (!completed) return then?.();
   audio.playCoin?.();
   showSheet(
     `🎉 完成 ${completed.title}`,
@@ -1016,8 +1018,9 @@ export function celebrateChapter(completed) {
        <span class="quiz-reward-pill">💗 好感 +${completed.reward.affection}</span>
        ${completed.reward.title ? `<span class="quiz-reward-pill">🏅 解鎖稱號：${escapeHtml(completed.reward.title)}</span>` : ""}
      </div>
-     <p class="unit-hint">下一章的任務已經在首頁的「📜 主線任務」裡等你喵。</p>`,
+     <p class="unit-hint">下一場考試已經排在月曆上了喵。</p>`,
     "繼續加油！",
+    then,
   );
 }
 function syncStatTask(key) {
@@ -1048,7 +1051,7 @@ function storyPanelHtml(key) {
     </div>
     <div class="story-btn-row">
       <button class="academy-action-btn story-btn" data-story-start="1">📖 劇情</button>
-      ${exam ? `<button class="academy-action-btn story-btn exam-btn" data-exam-start="1">📝 開始考試</button>` : ""}
+      ${exam ? `<button class="academy-action-btn story-btn exam-btn" data-pet-view="schedule">📅 ${escapeHtml(monthInfo(examMonth(s.chapterIndex)).label)} 考</button>` : ""}
     </div>
   </div>`;
 }
@@ -1068,8 +1071,8 @@ function openStorySheet() {
      <div class="unit-hint">完成後可獲得 🪙 ${ch.reward.coins} 金幣、好感 +${ch.reward.affection}${
        ch.reward.title ? `，並解鎖稱號「${escapeHtml(ch.reward.title)}」` : ""
      }。</div>`,
-    exam ? "📝 開始考試" : "接下任務！",
-    exam ? () => startExamSession() : null,
+    exam ? "📅 去排行程" : "接下任務！",
+    exam ? () => setPetView("schedule") : null,
     "稍後再說",
   );
 }
@@ -1145,9 +1148,7 @@ function catSpeechLine(key) {
 let avatarCat = "hair";
 // 主角目前的年級：跟著主線章節的冊次（四上 → 九年級），所以會隨劇情長大
 function avatarGrade() {
-  const ch = currentChapter(storyStateOf());
-  const term = ch?.exam?.term;
-  return term ? gradeOfTerm(term) : 4;
+  return monthInfo(raiseMonth()).grade; // 跟著月曆長大
 }
 function avatarState() {
   if (!petData.avatar) petData.avatar = defaultAvatar();
@@ -1213,6 +1214,7 @@ export function showPetHome() {
     shop: shopPageHtml,
     gacha: gachaPageHtml,
     trip: tripPageHtml,
+    schedule: schedulePageHtml,
   };
   if (pages[view]) return renderPetView(pages[view](key));
   const aff = petAffection(key),
@@ -1474,7 +1476,7 @@ function onPetClick(e) {
     setPetView(view.dataset.petView);
     return;
   }
-  if (handleTripClick(e)) return;
+  if (handleScheduleClick(e)) return;
   const shopTab = e.target.closest("[data-shop-tab]");
   if (shopTab) {
     setShopTab(shopTab.dataset.shopTab);
@@ -1546,11 +1548,6 @@ function onPetClick(e) {
     petData.avatar = defaultAvatar();
     savePetData();
     openAvatarSheet();
-    return;
-  }
-  const examStart = e.target.closest("[data-exam-start]");
-  if (examStart) {
-    startExamSession(); // 📝 期中考／期末考
     return;
   }
   const mistakesExport = e.target.closest("[data-mistake-export]");

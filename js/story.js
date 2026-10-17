@@ -175,6 +175,12 @@ export function applyEvent(story, type, n = 1) {
   };
 }
 
+// 考試沒過：時間照樣往前走（月曆制），這章不給獎勵，直接進下一章
+export function skipChapter(story) {
+  const s = normalizeStory(story);
+  return { ...s, chapterIndex: s.chapterIndex + 1, progress: {} };
+}
+
 // ===== 貓咪說的話 =====
 export function timeGreeting(date = new Date()) {
   const h = date.getHours();

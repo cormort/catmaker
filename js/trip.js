@@ -1,12 +1,9 @@
-// trip.js — 帶貓咪出門玩：公園散步、咖啡廳、逛街、看電影、海邊、溫泉旅行
-// 每次出門拍一張相片（場景底圖 + 該品種立繪合成）收進相簿；相簿是這裡的主要收藏。
+// trip.js — 出遊地點與相簿：行程排「休息・出遊」時（schedule.js）拍一張相片（場景底圖 + 該品種立繪合成）收進相簿
 import { audio } from "../audio.js";
-import { activePetKey, celebrateChapter, checkGrowthUpgrade, growthStage, petAffection, petCoins, petData, petMoodValue, petName, petStatus, petSubnavHtml, recordStoryEvent, savePetData, updatePetHeroStats, updatePetStatus } from "./pet.js";
-import { dirtLevel } from "./story.js";
-import { getRoomCatSprite, setRoomCatPose } from "./room.js";
-import { $, escapeHtml, localDay, showSheet } from "./ui.js";
+import { activePetKey, checkGrowthUpgrade, growthStage, petAffection, petData, petName, petSubnavHtml, savePetData } from "./pet.js";
+import { getRoomCatSprite } from "./room.js";
+import { escapeHtml, localDay } from "./ui.js";
 const HOUR = 3600e3;
-export const TRIP_MIN_ENERGY = 25;
 export const MAX_ALBUM = 30;
 // cost＝金幣；energy＝消耗體力；clean＝清潔度增減；photoPose＝相片裡要用哪個姿勢立繪
 export const TRIPS = [
@@ -105,16 +102,6 @@ export function tripAlbum() {
   petData.album = petData.album || [];
   return petData.album;
 }
-export function tripCooldown(id, key = activePetKey()) {
-  const rec = tripLog(key)[id];
-  const t = tripById(id);
-  if (!rec?.lastAt || !t) return 0;
-  return Math.max(0, rec.lastAt + t.cool - Date.now());
-}
-function fmtLeft(ms) {
-  const m = Math.ceil(ms / 60000);
-  return m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`;
-}
 function photoHtml(p, i = 0) {
   const t = tripById(p.id);
   if (!t) return "";
@@ -123,66 +110,13 @@ function photoHtml(p, i = 0) {
     <figcaption><b>${t.icon} ${t.name}</b><small>${escapeHtml(p.caption)}</small><em>${escapeHtml(p.catName || "")}・${escapeHtml(p.day || "")}</em></figcaption>
   </figure>`;
 }
-export function tripPageHtml(key = activePetKey()) {
-  const st = petStatus(key),
-    coins = petCoins(),
-    log = tripLog(key),
-    album = tripAlbum(),
-    done = TRIPS.reduce((n, t) => n + (log[t.id]?.count || 0), 0),
-    tired = st.energy < TRIP_MIN_ENERGY,
-    sick = !!st.sick;
-  const cards = TRIPS.map((t) => {
-    const cd = tripCooldown(t.id, key),
-      rec = log[t.id] || { count: 0 },
-      poor = coins < t.cost,
-      blocked = cd > 0 || poor || tired || sick;
-    const why =
-      cd > 0
-        ? `⏳ ${fmtLeft(cd)}後可以再去`
-        : sick
-          ? "😿 生病中，先休息"
-          : tired
-            ? `⚡ 體力不足（需 ${TRIP_MIN_ENERGY}）`
-            : poor
-              ? "🪙 金幣不足"
-              : `${t.cost ? `🪙 ${t.cost}・` : ""}⚡ ${t.energy}・💕 +${t.aff}・😺 +${t.mood}`;
-    return `<button class="trip-card${blocked ? " locked" : ""}" ${blocked ? "disabled" : `data-trip="${t.id}"`} aria-label="${t.name}">
-      <span class="trip-thumb" style="--scene:url(./icons/scenes/${t.scene}.webp)"><i>${t.icon}</i></span>
-      <span class="trip-info"><b>${t.name}</b><small>${why}</small></span>
-      <span class="trip-count">${rec.count ? `去過 ${rec.count} 次` : "還沒去過"}</span>
-    </button>`;
-  }).join("");
-  const photos = album.length
-    ? album
-        .slice()
-        .reverse()
-        .map((p, i) => photoHtml(p, i))
-        .join("")
-    : `<p class="trip-empty">相簿還是空的，帶 ${escapeHtml(petName(key))} 出門走走吧！</p>`;
-  return `${petSubnavHtml("trip")}<div class="trip-panel">
-    <div class="trip-hero"><b>🎒 帶 ${escapeHtml(petName(key))} 出門</b><small>🪙 ${coins}・⚡ 體力 ${Math.round(st.energy)}・這隻貓出門 ${done} 次</small></div>
-    <div class="trip-list">${cards}</div>
-    <div class="trip-album-title"><span>📸 相簿 ${album.length} 張</span><small>每次出門都會拍一張</small></div>
-    <div class="trip-album">${photos}</div>
-  </div>`;
-}
-export function startTrip(id, key = activePetKey()) {
+// 行程裡的出遊：只拍照收進相簿、貓咪好感 +（不檢查體力與冷卻，花費與壓力由 schedule.js 處理）
+export function tripPhoto(id, key = activePetKey()) {
   const t = tripById(id);
-  if (!t) return;
-  const st = petStatus(key),
-    cd = tripCooldown(id, key),
-    name = petName(key);
-  if (st.sick) return showSheet("😿 先休息", `${name}現在生病中，看完醫生再出門吧。`, "知道了");
-  if (dirtLevel(st.cleanliness) >= 2)
-    return showSheet("🛁 先洗個澡吧", `${name}身上髒兮兮的喵…先幫牠洗澡再出門，才不會被別人笑。`, "知道了");
-  if (st.energy < TRIP_MIN_ENERGY) return showSheet("⚡ 沒電了", `體力不足（需 ${TRIP_MIN_ENERGY}），先餵點東西或讓${name}休息一下。`, "知道了");
-  if (cd > 0) return showSheet("⏳ 才剛回來", `${fmtLeft(cd)}之後再帶${name}去${t.name}吧。`, "知道了");
-  if (petCoins() < t.cost) return showSheet("🪙 金幣不足", `去${t.name}需要 ${t.cost} 金幣喵。`, "知道了");
-  const beforeStage = growthStage(petAffection(key)).index;
-  petData.coins = Math.max(0, petCoins() - t.cost);
-  updatePetStatus(key, { energy: -t.energy, hunger: -8, cleanliness: t.clean });
+  if (!t) return "";
+  const name = petName(key),
+    beforeStage = growthStage(petAffection(key)).index;
   petData.affection[key] = Math.max(0, petAffection(key) + t.aff);
-  petData.mood[key] = Math.max(0, Math.min(100, petMoodValue(key) + t.mood));
   checkGrowthUpgrade(key, beforeStage);
   const log = tripLog(key);
   log[id] = { count: (log[id]?.count || 0) + 1, lastAt: Date.now() };
@@ -192,29 +126,23 @@ export function startTrip(id, key = activePetKey()) {
   album.push(entry);
   if (album.length > MAX_ALBUM) album.splice(0, album.length - MAX_ALBUM);
   savePetData();
-  // 主線任務：帶貓咪出門
-  try {
-    const { completed } = recordStoryEvent("trip", 1);
-    if (completed) setTimeout(() => celebrateChapter(completed), 400);
-  } catch {
-    /* 劇情系統不影響出門流程 */
-  }
-  updatePetHeroStats(key);
-  audio.playShutter(); // 拍照快門
-  audio.setScene(t.scene); // 換成這個場景的專屬配樂
-  setRoomCatPose(t.photoPose, `${t.name}好玩！`, "", 3000);
-  showPetHome();
-  showSheet(
-    `${t.icon} ${t.name}`,
-    `<div class="trip-result">${photoHtml(entry)}</div><p class="trip-result-line">${escapeHtml(caption)}</p><p class="trip-result-gain">💕 好感度 +${t.aff}・😺 心情 +${t.mood}・⚡ 體力 -${t.energy}${t.cost ? `・🪙 -${t.cost}` : ""}</p>`,
-    "收下照片",
-    () => audio.setScene("room"), // 收起照片後回到小屋的曲子
-  );
+  audio.playShutter();
+  return `<div class="trip-result">${photoHtml(entry)}</div><p class="trip-result-line">${escapeHtml(caption)}</p><p class="trip-result-gain">💕 ${escapeHtml(name)} 好感 +${t.aff}</p>`;
 }
-export function handleTripClick(e) {
-  const b = e.target.closest("[data-trip]");
-  if (!b) return false;
-  e.preventDefault();
-  startTrip(b.dataset.trip);
-  return true;
+export function tripPageHtml(key = activePetKey()) {
+  const log = tripLog(key),
+    album = tripAlbum(),
+    done = TRIPS.reduce((n, t) => n + (log[t.id]?.count || 0), 0);
+  const photos = album.length
+    ? album
+        .slice()
+        .reverse()
+        .map((p, i) => photoHtml(p, i))
+        .join("")
+    : `<p class="trip-empty">相簿還是空的，帶 ${escapeHtml(petName(key))} 出門走走吧！</p>`;
+  return `${petSubnavHtml("trip")}<div class="trip-panel">
+    <div class="trip-hero"><b>📸 相簿</b><small>出遊改成在「📅 排行程」裡安排（休息・出遊），每次都會拍一張・已出遊 ${done} 次</small></div>
+    <div class="trip-album-title"><span>📸 相簿 ${album.length} 張</span><small>每次出門都會拍一張</small></div>
+    <div class="trip-album">${photos}</div>
+  </div>`;
 }

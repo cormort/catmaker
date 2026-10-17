@@ -1,7 +1,6 @@
 // life.js — 電子雞式的貓咪生活：隨時間變化的需求、生病與看醫生、在客廳自己走動，以及需要玩家回應的隨機事件
 import { audio } from "../audio.js";
 import { handleDailyCare } from "./academy.js";
-import { dirtLevel } from "./story.js";
 import {
   activePetKey,
   addCoins,
@@ -22,11 +21,7 @@ import {
 import { addLitterClump, getRoomCatSprite, setRoomCatPose, spawnRoomHeart } from "./room.js";
 import { $, escapeHtml, showSheet } from "./ui.js";
 
-// ---------- 需求隨時間變化 ----------
-// 以「15 分鐘」為一步，用整數計算（顯示的百分比不會出現小數）；離線最多補算 24 小時
-const STEP_MS = 15 * 60 * 1000,
-  MAX_STEPS = 96;
-
+// 月曆制之後不再隨真實時間變餓、變髒、生病（時間只在排行程時往前走，見 schedule.js）
 export const ILLNESSES = {
   cold: { name: "感冒", icon: "🤧", cure: "pill", desc: "一直打噴嚏、流鼻水，精神不太好。" },
   stomach: { name: "腸胃炎", icon: "🤢", cure: "pill", desc: "肚子太餓又亂吃東西，腸胃不舒服。" },
@@ -39,48 +34,6 @@ const CURES = {
   shot: { icon: "💉", name: "打針", cost: 150 },
 };
 const clamp = (v) => Math.max(0, Math.min(100, v));
-
-// 每一步：餓一點、髒一點、體力慢慢回復；照顧不好就可能生病，拖太久會惡化
-function lifeStep(key, rng) {
-  const s = petStatus(key);
-  s.hunger = clamp(s.hunger - 1);
-  s.cleanliness = clamp(s.cleanliness - 1);
-  if (!s.sick) s.energy = clamp(s.energy + 2);
-  if (s.hunger < 20 || s.sick) petData.mood[key] = clamp(petMoodValue(key) - 1);
-  // 沒洗澡變髒：越髒心情掉越快，也比較容易生病
-  const dirt = dirtLevel(s.cleanliness);
-  if (dirt >= 2) petData.mood[key] = clamp(petMoodValue(key) - (dirt - 1));
-  if (s.sick) {
-    if (s.sick.id === "cold" && Date.now() - s.sick.since > 24 * 3600 * 1000)
-      s.sick = { id: "fever", since: Date.now() };
-    return;
-  }
-  const risk =
-    0.002 +
-    (s.hunger < 25 ? 0.01 : 0) +
-    (s.cleanliness < 30 ? 0.01 : 0) +
-    (s.fatigue > 80 ? 0.008 : 0) +
-    (s.hairballs || 0) * 0.004;
-  if (rng() >= risk) return;
-  const id =
-    (s.hairballs || 0) >= 3 ? "hairball" : s.hunger < 25 ? "stomach" : "cold";
-  s.sick = { id, since: Date.now() };
-}
-
-// 依經過時間補算；回傳是否有變化
-export function applyLifeTime(now = Date.now(), rng = Math.random) {
-  if (!petData.initialized) return false;
-  const key = activePetKey();
-  petData.lifeTick ??= now;
-  const steps = Math.floor((now - petData.lifeTick) / STEP_MS);
-  if (steps <= 0) return false;
-  const wasSick = !!petStatus(key).sick;
-  for (let i = 0; i < Math.min(steps, MAX_STEPS); i++) lifeStep(key, rng);
-  petData.lifeTick += steps * STEP_MS;
-  savePetData();
-  if (!wasSick && petStatus(key).sick) onFallSick();
-  return true;
-}
 
 export function sickInfo(key = activePetKey()) {
   const sick = petStatus(key).sick;
@@ -104,13 +57,6 @@ function befriend(affection, mood) {
   updatePetHeroStats(key);
 }
 
-function onFallSick() {
-  const ill = sickInfo();
-  if (!ill || !$("petRoomStage")) return;
-  audio.playMeow(0.8);
-  setRoomCatPose("sleep", `${ill.icon} 好像${ill.name}了…不太舒服喵`, "pet-sleep");
-  syncSickBadge();
-}
 
 let pillPaid = false;
 export function showClinic() {
@@ -949,7 +895,6 @@ function endCare(done) {
 // ---------- 主迴圈 ----------
 const TICK_MS = 7000;
 function tick() {
-  if (applyLifeTime()) refreshStatusBar();
   const stage = $("petRoomStage");
   if (!stage || document.hidden || $("homeScreen")?.hidden) return;
   syncSickBadge();
@@ -962,6 +907,5 @@ function tick() {
   else doBehavior();
 }
 export function startLife() {
-  applyLifeTime();
   setInterval(tick, TICK_MS);
 }

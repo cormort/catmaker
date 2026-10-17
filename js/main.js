@@ -1,7 +1,7 @@
 // main.js — 進入點：貓咪夢工廠（小屋、學院、屬性、商店、扭蛋、稱號、紀念、活動）
 import { audio } from "../audio.js";
 import { startLife } from "./life.js";
-import { petData, showPetHome, showStarterSetup, syncGrowthStages } from "./pet.js?v=20261004";
+import { petData, showPetHome, showStarterSetup, syncGrowthStages } from "./pet.js";
 import { loadSubjects, loadUnits } from "./quiz.js";
 import { $, LS, hideSheet } from "./ui.js";
 

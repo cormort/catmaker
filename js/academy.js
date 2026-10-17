@@ -1,8 +1,8 @@
 // academy.js — 學院排課測驗（題庫來自 quizzes/，見 js/quiz.js）、能力象限與日常照護
 import { audio } from "../audio.js";
-import { activePetKey, addCoins, addEventProgress, addPetStat, awardFood, rewardHtml, celebrateChapter, growthStage, petAffection, petData, petLevel, petName, petQuickStatusBarHtml, petStats, petStatus, petSubnavHtml, primaryTitle, recordStoryEvent, savePetData, setPetView, showPetHome, studyBuff, updatePetStatus } from "./pet.js";
+import { activePetKey, addEventProgress, awardFood, rewardHtml, celebrateChapter, growthStage, petAffection, petData, petLevel, petName, petQuickStatusBarHtml, petStats, petStatus, petSubnavHtml, primaryTitle, recordStoryEvent, savePetData, setPetView, showPetHome, updatePetStatus } from "./pet.js";
 import { showClinic, sickInfo, startCare } from "./life.js";
-import { GRADES, PUBLISHERS, QUIZ_SUBJECTS, TERMS, TEXTBOOK_UNITS, buildExamQuestions, calculateQuizResult, exportMistakes, filterCount, gradeRewardMul, importMistakes, isCorrect, mistakeCounts, mistakesFor, mistakesToQuestions, pickRound, recordMistake, termInfo, unitsFor } from "./quiz.js";
+import { GRADES, PUBLISHERS, QUIZ_SUBJECTS, TERMS, TEXTBOOK_UNITS, buildExamQuestions, calculateQuizResult, exportMistakes, filterCount, importMistakes, isCorrect, mistakeCounts, mistakesFor, mistakesToQuestions, pickRound, recordMistake, termInfo, unitsFor } from "./quiz.js";
 import { STORY, currentChapter, examPassed, normalizeStory } from "./story.js";
 import { ACTION_POSES, getRoomCatSprite } from "./room.js";
 import { $, escapeHtml, showSheet } from "./ui.js";
@@ -102,7 +102,7 @@ export function mistakeBookHtml() {
   </details>`;
 }
 // 考試（期中考／期末考）：跨科目抽題，通過才推進主線
-export function startExamSession() {
+export function startExamSession({ onDone = null } = {}) {
   const story = normalizeStory(petData.story);
   const ch = currentChapter(story);
   const exam = ch?.exam;
@@ -110,18 +110,9 @@ export function startExamSession() {
     showSheet("🎓 考試", "主線章節都考完了喵！接下來想練哪一科都可以。", "好耶");
     return;
   }
-  const key = activePetKey();
-  const st = petStatus(key);
-  if (sickInfo(key)) {
-    showSheet("貓咪生病了 🤒", `${sickInfo(key).icon} ${sickInfo(key).name}中，先帶去看醫生再考試吧！`, "去看醫生", showClinic, "取消");
-    return;
-  }
-  if (st.energy < 15) {
-    showSheet("貓咪體力不足 ⚡", "貓咪太累了喵！先去「屬性」面板讓貓咪睡覺休息，再來考試。", "前往休息", () => setPetView("stats"));
-    return;
-  }
   const questions = buildExamQuestions(exam.term, exam.count);
-  if (questions.length < exam.count) {
+  if (!questions.length && onDone) return onDone({ correct: 0, total: 0, exam });
+  if (questions.length < exam.count && !onDone) {
     showSheet("題庫不足 📚", `${exam.name}需要 ${exam.count} 題，這個冊次目前只有 ${questions.length} 題。`, "知道了");
     return;
   }
@@ -135,6 +126,25 @@ export function startExamSession() {
     correctCount: 0,
     answered: false,
     exam,
+    onDone,
+  };
+  renderQuizQuestion();
+}
+// 行程裡的上課：用這個月的冊次出題，結束時把答對題數交給 onDone（不走學院自己的獎勵）
+export function startLessonQuiz(subjectId, term, onDone) {
+  const sub = QUIZ_SUBJECTS[subjectId];
+  const questions = sub ? pickRound(sub, { term, publisher: quizPublisher() || null }) : [];
+  if (!questions.length) return onDone({ correct: 0, total: 0 });
+  currentQuizState = {
+    subjectId,
+    grade: termInfo(term)?.grade,
+    term,
+    publisher: quizPublisher(),
+    questions,
+    currentIndex: 0,
+    correctCount: 0,
+    answered: false,
+    onDone,
   };
   renderQuizQuestion();
 }
@@ -441,7 +451,6 @@ export function startQuizSession(subjectId) {
   if (!QUIZ_SUBJECTS[subjectId]) return;
   const sub = QUIZ_SUBJECTS[subjectId];
   const key = activePetKey();
-  const st = petStatus(key);
   const term = quizTerm();
   const tInfo = termInfo(term);
   const publisher = quizPublisher();
@@ -456,15 +465,6 @@ export function startQuizSession(subjectId) {
       `「${sub.name}」目前還沒有 ${tInfo.full}${publisher ? `・${publisher}版` : ""} 的題目，請換冊次或版本試試。`,
       "知道了",
     );
-    return;
-  }
-  const needEnergy = Math.round(15 * Math.max(0.8, gradeRewardMul(tInfo.grade)));
-  if (st.energy < needEnergy) {
-    showSheet("貓咪體力不足 ⚡", `貓咪太累了喵！請先前往「屬性」面板讓貓咪「睡覺休息」恢復體力後再來上課！`, "前往休息", () => setPetView("stats"));
-    return;
-  }
-  if (st.hunger < 10) {
-    showSheet("肚子咕嚕嚕 🍖", "貓咪太餓了喵！請先前往餵食飽餐一頓，補足元氣再來學習！", "前往餵食", () => setPetView("stats"));
     return;
   }
 
@@ -527,7 +527,9 @@ function renderQuizQuestion() {
     </div>
   `;
 
-  showSheet(`📚 隨堂測驗・${sub.name}`, body, "退出測驗", () => setPetView("academy"));
+  if (currentQuizState.onDone)
+    showSheet(`📚 ${currentQuizState.exam ? currentQuizState.exam.name : `${sub.name}課`}`, body, "交卷（沒答的算錯）", finishQuizSession);
+  else showSheet(`📚 隨堂測驗・${sub.name}`, body, "退出測驗", () => setPetView("academy"));
 }
 
 export function handleQuizAnswer(selectedIndex) {
@@ -586,6 +588,11 @@ export function handleQuizAnswer(selectedIndex) {
 
 function finishQuizSession() {
   if (!currentQuizState) return;
+  if (currentQuizState.onDone) {
+    const { onDone, correctCount, questions, exam } = currentQuizState;
+    currentQuizState = null;
+    return onDone({ correct: correctCount, total: questions.length, exam });
+  }
   const { subjectId, correctCount, questions } = currentQuizState;
   const total = questions.length;
   const quizGradeUsed = currentQuizState.grade;
@@ -595,26 +602,8 @@ function finishQuizSession() {
   const sub = QUIZ_SUBJECTS[subjectId];
   const key = activePetKey();
 
-  // 陪讀加成（📖 一起讀書）：30 分鐘內完成測驗，金幣 +20%
-  const buff = studyBuff();
-  const coinsGained = buff > 1 ? Math.round(res.coins * buff) : res.coins;
-  res.coins = coinsGained;
-
-  addCoins(res.coins);
+  // 學院自習只是練習：不給金幣與能力值（那些要排行程上課、打工才有，見 schedule.js）
   const examState = currentQuizState.exam || null;
-  if (examState) {
-    // 考試跨科目：把能力值獎勵平分給有考到的科目
-    const subs = [...new Set(questions.map((q) => q.examSubject || subjectId).filter(Boolean))];
-    const each = Math.max(1, Math.round(res.statGain / Math.max(1, subs.length)));
-    for (const sid of subs) addPetStat(key, sid, each);
-  } else {
-    addPetStat(key, subjectId, res.statGain);
-  }
-  updatePetStatus(key, {
-    energy: -res.staminaCost,
-    hunger: -res.hungerCost,
-    fatigue: res.fatigueGain,
-  });
   // 原本數獨打工給的食物、解鎖新貓、活動任務，改由完成測驗給（隨堂＝簡單、考試＝普通的掉落表）
   const food = awardFood({ n: examState ? 7 : 5, daily: false });
   addEventProgress("wins", 1);
@@ -683,13 +672,9 @@ function finishQuizSession() {
           res.rewardMul !== 1 ? `（獎勵 ×${res.rewardMul}）` : ""
         }
       </div>
-      <div class="quiz-rewards-row">
-        <span class="quiz-reward-pill">🪙 +${res.coins} 金幣</span>
-        <span class="quiz-reward-pill" style="color:${sub.color};">${sub.icon} ${sub.statName} +${res.statGain}</span>
-        ${res.dropItem ? `<span class="quiz-reward-pill" style="color:#b45309;">${res.dropItem.name} ×${res.dropItem.qty}</span>` : ""}
-      </div>
+      ${res.dropItem ? `<div class="quiz-rewards-row"><span class="quiz-reward-pill" style="color:#b45309;">${res.dropItem.name} ×${res.dropItem.qty}</span></div>` : ""}
       <div style="font-size:0.72rem; color:var(--muted); line-height:1.4;">
-        體力 -${res.staminaCost}⚡ · 飽食 -${res.hungerCost}🍖 · 疲勞 +${res.fatigueGain}💤
+        📝 自習只是練習，不給金幣與能力值；要成長請到「📅 排行程」上課
       </div>
       ${rewardHtml(food)}
     </div>

@@ -5641,3 +5641,89 @@ label {
     display: block;
   }
 }
+
+/* =========================================================
+   📅 排行程（schedule.js）：月曆、女孩能力值、三旬行程
+   ========================================================= */
+.sched-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+/* .pm-bigbtn 在首頁磚塊裡是 span 2，這裡只有一欄 */
+.sched-panel > * {
+  grid-column: 1 / -1;
+}
+.sched-hero {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.sched-avatar {
+  display: flex;
+  justify-content: center;
+}
+.sched-stats {
+  display: grid;
+  gap: 4px;
+}
+.sched-stress.high > b,
+.sched-stress.high > span:first-child {
+  color: var(--pm-red);
+}
+.sched-slots {
+  display: grid;
+  gap: 8px;
+}
+.sched-slot {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.sched-slot > b {
+  font-family: var(--pm-serif);
+  color: var(--pm-cream);
+}
+.sched-slot select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 2px solid var(--pm-frame);
+  border-radius: 8px;
+  background: var(--pm-black);
+  color: var(--pm-cream);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.sched-fixed {
+  padding: 10px;
+  border: 2px dashed var(--pm-red);
+  border-radius: 8px;
+  color: var(--pm-red-dark);
+  font-weight: 700;
+}
+.sched-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 4px solid var(--pm-frame-dark);
+  background: var(--pm-black-2);
+  font-size: 0.88rem;
+}
+.sched-note.warn {
+  border-left-color: var(--pm-red);
+}
+@media (max-width: 420px) {
+  .sched-hero {
+    grid-template-columns: 1fr;
+  }
+}
+.sched-panel .pm-goldrow {
+  flex-wrap: wrap;
+}
+.sched-panel .pm-vals {
+  font-size: 1.3rem;
+  white-space: nowrap;
+}
