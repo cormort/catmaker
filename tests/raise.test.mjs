@@ -54,3 +54,34 @@ assert.equal(blockReason(ACTIVITIES.find((a) => a.id === "tutor"), r), "博學�
 assert.equal(blockReason(ACTIVITIES.find((a) => a.id === "trip:beach"), { ...r, month: 0 }), "只在暑假");
 assert.equal(blockReason(ACTIVITIES.find((a) => a.id === "trip:beach"), { ...r, month: 10 }), null);
 console.log("raise ✅");
+
+// 每月隨機事件
+{
+  const { EVENTS, applyEventChoice, choiceBlocked, eventById, monthInfo: mi, pickMonthEvent } = await import("../js/raise.js");
+  const base = newRaiseState();
+  assert.ok(EVENTS.every((e) => e.choices.length === 2), "每個事件都是二選一");
+  assert.equal(new Set(EVENTS.map((e) => e.id)).size, EVENTS.length);
+  // 平常月份：亂數沒過門檻就沒事
+  assert.equal(pickMonthEvent(base, 3, () => 0.99), null, "12 月沒有季節事件");
+  assert.ok(pickMonthEvent(base, 3, () => 0));
+  // 季節事件：2 月一定有事件，而且只會抽到條件成立的
+  const feb = 5;
+  assert.equal(mi(feb).calMonth, 2);
+  assert.ok(pickMonthEvent(base, feb, () => 0.99));
+  for (let x = 0; x < 1; x += 0.05) {
+    const e = pickMonthEvent(base, 1, () => x);
+    if (e) assert.ok(e.when(base, mi(1)), `${e.id} 條件成立`);
+  }
+  assert.ok(!eventById("cold").when(base, mi(1)) && eventById("cold").when({ ...base, stress: 70 }, mi(1)));
+  // 選項效果：能力值不會變負的、壓力夾在 0～100、不改原物件
+  const weak = { ...base, stats: { ...base.stats, stamina: 1 }, stress: 95 };
+  const out = applyEventChoice(weak, "cold", 1);
+  assert.equal(out.raise.stats.stamina, 0);
+  assert.equal(out.delta.stats.stamina, -1);
+  assert.equal(out.raise.stress, 100);
+  assert.equal(weak.stress, 95);
+  assert.equal(applyEventChoice(base, "redenvelope", 0).delta.money, 300);
+  assert.ok(choiceBlocked(eventById("cold").choices[0], 50) && !choiceBlocked(eventById("cold").choices[0], 80));
+  assert.equal(applyEventChoice({ ...base, event: "cold" }, "wallet", 0).raise.event, "cold", "event 欄位由 schedule.js 清掉");
+  console.log("events ✅");
+}

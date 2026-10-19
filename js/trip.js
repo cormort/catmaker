@@ -111,7 +111,7 @@ function photoHtml(p, i = 0) {
   </figure>`;
 }
 // 行程裡的出遊：只拍照收進相簿、貓咪好感 +（不檢查體力與冷卻，花費與壓力由 schedule.js 處理）
-export function tripPhoto(id, key = activePetKey()) {
+export function tripPhoto(id, key = activePetKey(), day = localDay()) {
   const t = tripById(id);
   if (!t) return "";
   const name = petName(key),
@@ -121,7 +121,7 @@ export function tripPhoto(id, key = activePetKey()) {
   const log = tripLog(key);
   log[id] = { count: (log[id]?.count || 0) + 1, lastAt: Date.now() };
   const caption = t.lines[Math.floor(Math.random() * t.lines.length)];
-  const entry = { id, key, caption, catName: name, at: Date.now(), day: localDay() };
+  const entry = { id, key, caption, catName: name, at: Date.now(), day };
   const album = tripAlbum();
   album.push(entry);
   if (album.length > MAX_ALBUM) album.splice(0, album.length - MAX_ALBUM);

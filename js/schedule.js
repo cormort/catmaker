@@ -5,7 +5,7 @@ import { audio } from "../audio.js";
 import { startExamSession, startLessonQuiz } from "./academy.js";
 import { defaultAvatar, normalizeAvatar, renderAvatar } from "./avatar.js";
 import { activePetKey, celebrateChapter, petCoins, petData, petName, petStats, petSubnavHtml, recordStoryEvent, savePetData, showPetHome } from "./pet.js";
-import { ACTIVITIES, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applySlot, blockReason, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, slotPlan, startMonthForChapter } from "./raise.js";
+import { ACTIVITIES, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applyEventChoice, applySlot, blockReason, choiceBlocked, eventById, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, pickMonthEvent, slotPlan, startMonthForChapter } from "./raise.js";
 import { STORY, currentChapter, examPassed, normalizeStory, skipChapter } from "./story.js";
 import { tripPhoto } from "./trip.js";
 import { $, escapeHtml, showSheet } from "./ui.js";
@@ -92,7 +92,10 @@ export function schedulePageHtml() {
     )
     .join("");
   const avatar = renderAvatar(normalizeAvatar(petData.avatar || defaultAvatar()), { size: 120, grade: info.grade });
-  const resume = r.pending ? `<button class="pm-bigbtn" data-sched-resume="1">▶ 繼續這個月（${SLOTS[r.pending.idx] || "結算"}）</button>` : "";
+  const ev = eventById(r.event);
+  const resume = ev
+    ? `<button class="pm-bigbtn" data-sched-event="1">${ev.icon} 發生了一件事：${escapeHtml(ev.title)}</button>`
+    : r.pending ? `<button class="pm-bigbtn" data-sched-resume="1">▶ 繼續這個月（${SLOTS[r.pending.idx] || "結算"}）</button>` : "";
   return `${petSubnavHtml("schedule")}<div class="pm-panel sched-panel">
     <div class="pm-strip"><span>📅 ${escapeHtml(info.label)}</span><span>第 ${r.month + 1}/${TOTAL_MONTHS} 月</span></div>
     <div class="sched-hero"><div class="sched-avatar">${avatar}</div>${statsHtml(r)}</div>
@@ -109,7 +112,7 @@ export function schedulePageHtml() {
 function runMonth() {
   const r = raiseState(),
     draft = draftOf(r);
-  if (!draft.every(Boolean) || monthCost(draft.filter((id) => id !== "exam"), r.month) > petCoins()) return;
+  if (r.event || !draft.every(Boolean) || monthCost(draft.filter((id) => id !== "exam"), r.month) > petCoins()) return;
   r.pending = { month: r.month, slots: draft, idx: 0, log: [] };
   saveRaise(r);
   nextSlot();
@@ -134,7 +137,9 @@ function nextSlot() {
   doneSlot(id, null);
 }
 function deltaHtml(delta) {
-  const parts = Object.entries(delta.stats).map(([k, v]) => `${STATS[k].icon} ${STATS[k].name} +${v}`);
+  const parts = Object.entries(delta.stats)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${STATS[k].icon} ${STATS[k].name} ${v > 0 ? "+" : ""}${v}`);
   if (delta.money) parts.push(`🪙 ${delta.money > 0 ? "+" : ""}${delta.money}G`);
   if (delta.stress) parts.push(`😣 壓力 ${delta.stress > 0 ? "+" : ""}${delta.stress}`);
   return `<div class="quiz-rewards-row">${parts.map((x) => `<span class="quiz-reward-pill">${x}</span>`).join("")}</div>`;
@@ -147,7 +152,7 @@ function doneSlot(id, quiz) {
   r.pending = { ...before.pending, idx: before.pending.idx + 1, log: [...before.pending.log, { id, delta }] };
   petData.coins = Math.max(0, petCoins() + delta.money);
   saveRaise(r);
-  const photo = a?.trip ? tripPhoto(a.trip) : "";
+  const photo = a?.trip ? tripPhoto(a.trip, activePetKey(), `${monthInfo(r.month).label}・${slot}`) : "";
   const quizLine = quiz ? `<p class="unit-hint">答對 ${quiz.correct} / ${quiz.total} 題${r.stress >= STRESS_HIGH ? "（壓力太大，只學進一半）" : ""}</p>` : "";
   if (delta.money > 0) audio.playCoin?.();
   showSheet(`${slot}・${a?.icon || ""} ${a?.name || ""}`, `${photo}${quizLine}${deltaHtml(delta)}`, "繼續", nextSlot);
@@ -182,6 +187,7 @@ function finishMonth() {
     }
   petData.raiseDraft = r.pending.slots;
   r.pending = null;
+  r.event = pickMonthEvent(r, r.month)?.id || null;
   r.month += 1;
   saveRaise(r);
   audio.playJingle?.();
@@ -189,15 +195,39 @@ function finishMonth() {
   showSheet(
     `🗓️ ${done.label} 結束`,
     `${deltaHtml({ ...total, stress: 0 })}<p class="unit-hint">😣 目前壓力 ${r.stress}・🪙 ${petCoins()}G</p><p class="unit-hint">${next}</p>`,
-    "排下個月",
-    showPetHome,
+    r.event ? "繼續" : "排下個月",
+    r.event ? showEvent : showPetHome,
   );
+}
+
+// ---------- 每月隨機事件（二選一）----------
+function showEvent() {
+  const r = raiseState(),
+    ev = eventById(r.event);
+  if (!ev) return showPetHome();
+  const label = (c) => `${c.label}${choiceBlocked(c, petCoins()) ? "（金幣不夠）" : ""}`,
+    pick = (i) => () => (choiceBlocked(ev.choices[i], petCoins()) ? showEvent() : chooseEvent(i));
+  showSheet(`${ev.icon} ${ev.title}`, `<p class="sched-event-text">${escapeHtml(ev.text)}</p>`, label(ev.choices[0]), pick(0), label(ev.choices[1]), pick(1));
+}
+function chooseEvent(i) {
+  const before = raiseState(),
+    ev = eventById(before.event),
+    { raise: r, delta } = applyEventChoice(before, ev.id, i);
+  r.event = null;
+  petData.coins = Math.max(0, petCoins() + delta.money);
+  saveRaise(r);
+  if (delta.money > 0) audio.playCoin?.();
+  showSheet(`${ev.icon} ${ev.choices[i].label}`, deltaHtml(delta), "排下個月", showPetHome);
 }
 
 // ---------- 事件 ----------
 export function handleScheduleClick(e) {
   if (e.target.closest("[data-sched-run]")) {
     runMonth();
+    return true;
+  }
+  if (e.target.closest("[data-sched-event]")) {
+    showEvent();
     return true;
   }
   if (e.target.closest("[data-sched-resume]")) {

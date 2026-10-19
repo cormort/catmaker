@@ -59,7 +59,7 @@ export const STRESS_HIGH = 80; // 壓力太大：上課學不進去（能力值�
 export function newRaiseState({ month = 0, academic = {} } = {}) {
   const stats = { stamina: 20, art: 10, grace: 10 };
   for (const k of ["chinese", "math", "science", "social", "english"]) stats[k] = Math.round(academic[k] ?? 10);
-  return { month, stats, stress: 0, examResults: {}, pending: null };
+  return { month, stats, stress: 0, examResults: {}, pending: null, event: null };
 }
 export function normalizeRaise(r) {
   if (!r || typeof r !== "object") return null;
@@ -70,6 +70,7 @@ export function normalizeRaise(r) {
     stress: clamp(Number(r.stress) || 0, 0, 100),
     examResults: { ...(r.examResults || {}) },
     pending: r.pending && Array.isArray(r.pending.slots) ? { ...r.pending } : null,
+    event: typeof r.event === "string" ? r.event : null, // 月底抽到、還沒選的事件
   };
 }
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -141,4 +142,60 @@ export function applySlot(raise, id, quiz = null) {
 export function slotPlan(month) {
   const exam = monthInfo(month).exam;
   return SLOTS.map((label, i) => ({ label, fixed: exam && i === 2 ? "exam" : null }));
+}
+
+// ===== 每月隨機事件 =====
+// 月底結算後有機會遇到一件事，二選一。when(r, info)＝能不能發生；weight 越大越常抽到。
+// 選項效果：stats（可以是負的）、stress、money
+export const EVENT_CHANCE = 0.4;
+export const EVENTS = [
+  { id: "cold", icon: "🤧", title: "感冒了", text: "壓力太大，身體撐不住，喉嚨好痛…", weight: 6, when: (r) => r.stress >= 60,
+    choices: [{ label: "去看醫生、好好睡", money: -80, stress: -20 }, { label: "硬撐著上學", stats: { stamina: -3 }, stress: 10 }] },
+  { id: "redenvelope", icon: "🧧", title: "過年領紅包", text: "阿公阿嬤包了大紅包！", weight: 20, when: (r, i) => i.calMonth === 2,
+    choices: [{ label: "存起來", money: 300 }, { label: "買新年禮物送貓咪", money: 150, stress: -10 }] },
+  { id: "moon", icon: "🥮", title: "中秋烤肉", text: "鄰居邀請一起在社區烤肉賞月。", weight: 20, when: (r, i) => i.calMonth === 9,
+    choices: [{ label: "幫忙烤肉", stats: { stamina: 2 }, stress: -10 }, { label: "在旁邊讀月亮的故事", stats: { chinese: 2 }, stress: -6 }] },
+  { id: "sportsday", icon: "🏅", title: "運動會", text: "班上的大隊接力還缺一個人！", weight: 12, when: (r, i) => i.calMonth === 10,
+    choices: [{ label: "報名接力", stats: { stamina: 5 }, stress: 4 }, { label: "當啦啦隊", stats: { grace: 2 }, stress: -4 }] },
+  { id: "talentshow", icon: "🎤", title: "才藝表演會", text: "老師問你要不要上台表演。", weight: 5, when: (r, i) => !i.summer && r.stats.art >= 30,
+    choices: [{ label: "上台表演", stats: { art: 4, grace: 2 }, stress: 6 }, { label: "在台下欣賞", stats: { art: 1 }, stress: -4 }] },
+  { id: "scout", icon: "☕", title: "咖啡廳店長的邀請", text: "貓咪咖啡廳店長覺得你很有氣質，想請你週末來幫忙。", weight: 4, when: (r) => r.stats.grace >= 40,
+    choices: [{ label: "去試做一天", money: 200, stats: { grace: 2 }, stress: 8 }, { label: "婉拒，專心念書", stress: -2 }] },
+  { id: "wallet", icon: "👛", title: "撿到錢包", text: "放學路上撿到一個錢包，裡面有學生證。", weight: 4, when: () => true,
+    choices: [{ label: "交給老師", stats: { grace: 3 } }, { label: "照學生證去找失主", stats: { social: 2 }, stress: 2 }] },
+  { id: "library", icon: "📚", title: "圖書館的新書", text: "圖書館進了一整櫃新書。", weight: 5, when: (r, i) => !i.summer,
+    choices: [{ label: "借一疊回家讀", stats: { chinese: 3, social: 1 }, stress: 3 }, { label: "借一本圖鑑就好", stats: { science: 1 }, stress: -2 }] },
+  { id: "penpal", icon: "✉️", title: "外國筆友", text: "英文老師幫班上配對了外國筆友。", weight: 4, when: (r, i) => i.grade >= 5,
+    choices: [{ label: "認真寫一封長信", stats: { english: 3 }, stress: 3 }, { label: "畫一張圖寄過去", stats: { art: 2 } }] },
+  { id: "catgift", icon: "🐟", title: "貓咪的禮物", text: "貓咪叼了一條小魚乾放在你的枕頭上。", weight: 5, when: () => true,
+    choices: [{ label: "抱抱貓咪", stress: -8 }, { label: "陪牠玩一下午", stats: { stamina: 1 }, stress: -12 }] },
+  { id: "summercamp", icon: "🏕️", title: "科學夏令營", text: "暑假有一個三天兩夜的科學營。", weight: 10, when: (r, i) => i.summer,
+    choices: [{ label: "參加（−200G）", money: -200, stats: { science: 4, stamina: 2 }, stress: -5 }, { label: "在家看星星", stats: { science: 1 }, stress: -8 }] },
+];
+export const eventById = (id) => EVENTS.find((e) => e.id === id) || null;
+// rand：0～1 的亂數函式（測試可以傳固定的）
+export function pickMonthEvent(raise, month, rand = Math.random) {
+  const info = monthInfo(month),
+    pool = EVENTS.filter((e) => e.when(raise, info));
+  const seasonal = pool.some((e) => e.weight >= 10); // 節日、季節事件一定會發生
+  if (!pool.length || (!seasonal && rand() >= EVENT_CHANCE)) return null;
+  let roll = rand() * pool.reduce((s, e) => s + e.weight, 0);
+  return pool.find((e) => (roll -= e.weight) < 0) || pool[pool.length - 1];
+}
+// 錢不夠就不能選要花錢的選項
+export const choiceBlocked = (choice, coins) => (choice.money || 0) < 0 && coins < -choice.money;
+export function applyEventChoice(raise, eventId, idx) {
+  const r = normalizeRaise(raise),
+    c = eventById(eventId)?.choices[idx],
+    delta = { money: c?.money || 0, stats: {}, stress: 0 };
+  if (!c) return { raise: r, delta };
+  for (const [k, v] of Object.entries(c.stats || {})) {
+    const before = r.stats[k] || 0;
+    r.stats[k] = clamp(before + v, 0, STAT_MAX);
+    delta.stats[k] = r.stats[k] - before;
+  }
+  const before = r.stress;
+  r.stress = clamp(before + (c.stress || 0), 0, 100);
+  delta.stress = r.stress - before;
+  return { raise: r, delta };
 }
