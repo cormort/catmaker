@@ -1,7 +1,7 @@
 /* 貓咪夢工廠 Service Worker：App Shell + 離線可玩。
  * 同源資源採網路優先、離線退回快取。 */
 const PREFIX='catmaker'; // 跟同網域的 meowdoku 分開，免得互刪快取
-const SHELL=`${PREFIX}-shell-v62`;
+const SHELL=`${PREFIX}-shell-v63`;
 const APP_SHELL=[
   './',
   './index.html',

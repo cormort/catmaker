@@ -5,7 +5,7 @@ import { audio } from "../audio.js";
 import { startExamSession, startLessonQuiz } from "./academy.js";
 import { defaultAvatar, normalizeAvatar, renderAvatar } from "./avatar.js";
 import { activePetKey, celebrateChapter, petCoins, petData, petName, petStats, petSubnavHtml, recordStoryEvent, savePetData, showPetHome } from "./pet.js";
-import { ACTIVITIES, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applyEventChoice, applySlot, blockReason, choiceBlocked, eventById, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, pickMonthEvent, slotPlan, startMonthForChapter } from "./raise.js";
+import { ACTIVITIES, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applyEventChoice, applySlot, blockReason, choiceBlocked, endingById, eventById, examPasses, graduationEnding, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, pickMonthEvent, slotPlan, startMonthForChapter } from "./raise.js";
 import { STORY, currentChapter, examPassed, normalizeStory, skipChapter } from "./story.js";
 import { tripPhoto } from "./trip.js";
 import { $, escapeHtml, showSheet } from "./ui.js";
@@ -73,9 +73,7 @@ function slotSelectHtml(i, value, r) {
 export function schedulePageHtml() {
   const r = raiseState(),
     name = petName(activePetKey());
-  if (graduated(r))
-    return `${petSubnavHtml("schedule")}<div class="pm-panel sched-panel"><div class="pm-strip"><span>🎓 畢業了</span><span>${TOTAL_MONTHS}/${TOTAL_MONTHS} 月</span></div>
-      <p class="unit-hint">九年級畢業了！${escapeHtml(name)}陪你走完六年。結局會在之後的版本加入喵。</p>${statsHtml(r)}</div>`;
+  if (graduated(r)) return graduationHtml(r, name);
   const info = monthInfo(r.month),
     draft = draftOf(r),
     chosen = draft.filter((id) => id && id !== "exam"),
@@ -105,6 +103,23 @@ export function schedulePageHtml() {
     ${resume || `<div class="sched-slots">${slots}</div>
     <button class="pm-bigbtn" data-sched-run="1"${ready && !poor ? "" : " disabled"}>${!ready ? "先把三旬都排好" : poor ? "🪙 金幣不夠，改排打工吧" : "▶ 開始這個月"}</button>`}
     <p class="unit-hint">🐱 ${escapeHtml(name)}：上課會出這個月的課本範圍（${escapeHtml(info.term)}）的題目，答對越多長越多；打工賺錢但壓力大，記得排休息。</p>
+  </div>`;
+}
+
+// ---------- 畢業結局 ----------
+function graduationHtml(r, name) {
+  if (!endingById(r.ending)) saveRaise({ ...r, ending: graduationEnding(r, petCoins()).id }); // 舊存檔：畢業了還沒定結局
+  const e = endingById(raiseState().ending),
+    avatar = renderAvatar(normalizeAvatar(petData.avatar || defaultAvatar()), { size: 180, grade: 9 });
+  return `${petSubnavHtml("schedule")}<div class="pm-panel sched-panel">
+    <div class="pm-strip"><span>🎓 畢業典禮</span><span>${TOTAL_MONTHS}/${TOTAL_MONTHS} 月</span></div>
+    <div class="sched-ending">
+      <div class="sched-avatar">${avatar}</div>
+      <div><small>ENDING</small><h3>${e.icon} ${escapeHtml(e.title)}</h3><p>${escapeHtml(e.text)}</p></div>
+    </div>
+    <p class="sched-note">🐱 ${escapeHtml(name)}：「${escapeHtml(e.cat)}」</p>
+    <div class="pm-goldrow"><span class="pm-label">考試及格</span><span class="pm-vals">${examPasses(r)} / 24 場</span><span class="pm-label">GOLD</span><span class="pm-vals">${petCoins()} G</span></div>
+    ${statsHtml(r)}
   </div>`;
 }
 
@@ -187,15 +202,16 @@ function finishMonth() {
     }
   petData.raiseDraft = r.pending.slots;
   r.pending = null;
-  r.event = pickMonthEvent(r, r.month)?.id || null;
+  r.event = r.month + 1 < TOTAL_MONTHS ? pickMonthEvent(r, r.month)?.id || null : null;
   r.month += 1;
+  if (graduated(r)) r.ending = graduationEnding(r, petCoins()).id;
   saveRaise(r);
   audio.playJingle?.();
-  const next = graduated(r) ? "🎓 九年級畢業！" : `下個月：${monthInfo(r.month).label}`;
+  const next = graduated(r) ? "🎓 九年級畢業！去看看畢業典禮吧" : `下個月：${monthInfo(r.month).label}`;
   showSheet(
     `🗓️ ${done.label} 結束`,
     `${deltaHtml({ ...total, stress: 0 })}<p class="unit-hint">😣 目前壓力 ${r.stress}・🪙 ${petCoins()}G</p><p class="unit-hint">${next}</p>`,
-    r.event ? "繼續" : "排下個月",
+    r.event ? "繼續" : graduated(r) ? "🎓 去畢業典禮" : "排下個月",
     r.event ? showEvent : showPetHome,
   );
 }

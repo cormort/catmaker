@@ -5733,3 +5733,27 @@ label {
   line-height: 1.6;
   text-align: center;
 }
+.sched-ending {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.sched-ending small {
+  letter-spacing: 0.2em;
+  opacity: 0.7;
+}
+.sched-ending h3 {
+  margin: 2px 0 6px;
+  font-size: 1.3rem;
+}
+.sched-ending p {
+  margin: 0;
+  line-height: 1.6;
+}
+@media (max-width: 480px) {
+  .sched-ending {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}

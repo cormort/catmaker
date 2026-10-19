@@ -71,6 +71,7 @@ export function normalizeRaise(r) {
     examResults: { ...(r.examResults || {}) },
     pending: r.pending && Array.isArray(r.pending.slots) ? { ...r.pending } : null,
     event: typeof r.event === "string" ? r.event : null, // 月底抽到、還沒選的事件
+    ending: typeof r.ending === "string" ? r.ending : null, // 畢業那一刻定下的結局
   };
 }
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -198,4 +199,39 @@ export function applyEventChoice(raise, eventId, idx) {
   r.stress = clamp(before + (c.stress || 0), 0, 100);
   delta.stress = r.stress - before;
   return { raise: r, delta };
+}
+
+// ===== 畢業結局 =====
+// 九年級 6 月結束時依能力值、考試、壓力、存款決定，順序＝優先度
+export const ENDING_STAT_MIN = 150; // 最高的那項要到這裡才算「專長」
+const ACADEMIC = LESSON_SUBJECTS;
+export const ENDINGS = [
+  { id: "burnout", icon: "😴", title: "累壞了的畢業典禮", text: "撐到畢業了，可是好累好累…暑假先好好睡一覺，再慢慢想以後要做什麼吧。", cat: "辛苦了，這個暑假換我照顧你喵。" },
+  { id: "honors", icon: "🏆", title: "星讀學園榮譽畢業生", text: "考試幾乎場場及格，每一科都很拿手，站上台領了榮譽畢業獎！", cat: "我就知道你做得到，我是全學園最驕傲的學習貓喵！" },
+  { id: "cafeowner", icon: "☕", title: "貓咪咖啡廳的小老闆", text: "存下來的錢和打工學到的待客之道，讓你開了一間自己的貓咪咖啡廳。", cat: "我要當招牌貓，薪水是小魚乾喵。" },
+  { id: "chinese", icon: "📖", title: "少女作家", text: "寫的故事得了文學獎，出版社說想幫你出第一本書。", cat: "書裡的貓咪是我對吧？要寫帥一點喵。" },
+  { id: "math", icon: "📐", title: "數學競賽冠軍", text: "在數學競賽拿下金牌，老師推薦你進數理資優班。", cat: "你算題目的速度比我抓逗貓棒還快喵。" },
+  { id: "science", icon: "🔬", title: "未來的科學家", text: "科展作品被選為全國第一名，研究室的教授邀請你暑假去參觀。", cat: "下次研究一下為什麼貓咪喜歡紙箱喵。" },
+  { id: "social", icon: "🌏", title: "博學的小導覽員", text: "博物館請你當暑期小導覽員，什麼問題都難不倒你。", cat: "帶我去看古埃及的貓神像喵！" },
+  { id: "english", icon: "🔤", title: "國際交換學生", text: "流利的外語讓你拿到出國交換的機會，要去認識全世界了。", cat: "記得每天視訊給我看喵，Meow!" },
+  { id: "stamina", icon: "🏃", title: "運動校隊王牌", text: "高中的體育班搶著要你，下一個目標是全國運動會。", cat: "你跑得比我追蝴蝶還快了喵。" },
+  { id: "art", icon: "🎨", title: "藝術新星", text: "畫作和琴聲都受到肯定，考上了藝術才能班。", cat: "可以幫我畫一張帥氣的肖像嗎喵？" },
+  { id: "grace", icon: "🌸", title: "優雅的小淑女", text: "一舉一動都好有氣質，被選為畢業典禮的致詞代表。", cat: "連我都想學你怎麼優雅地喝水了喵。" },
+  { id: "ordinary", icon: "🐱", title: "平凡又幸福的畢業", text: "沒有什麼驚天動地的大事，但每一天都過得很開心，最好的朋友一直都在身邊。", cat: "能陪你長大，是我最幸福的事喵。" },
+];
+export const endingById = (id) => ENDINGS.find((e) => e.id === id) || null;
+export const examPasses = (raise) => Object.values(raise.examResults || {}).filter((x) => x?.pass).length;
+// 專長：能力值最高的一項（同分取 STATS 的順序）
+export function topStat(raise) {
+  return Object.keys(STATS).reduce((best, k) => ((raise.stats[k] || 0) > (raise.stats[best] || 0) ? k : best));
+}
+export function graduationEnding(raise, coins = 0) {
+  const s = raise.stats,
+    top = topStat(raise),
+    pick = (id) => endingById(id);
+  if (raise.stress >= 90) return pick("burnout");
+  if (examPasses(raise) >= 20 && ACADEMIC.every((k) => (s[k] || 0) >= 120)) return pick("honors");
+  if (coins >= 3000 && (s.grace || 0) >= 60) return pick("cafeowner");
+  if ((s[top] || 0) >= ENDING_STAT_MIN) return pick(top);
+  return pick("ordinary");
 }

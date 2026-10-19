@@ -85,3 +85,23 @@ console.log("raise ✅");
   assert.equal(applyEventChoice({ ...base, event: "cold" }, "wallet", 0).raise.event, "cold", "event 欄位由 schedule.js 清掉");
   console.log("events ✅");
 }
+
+// 畢業結局
+{
+  const { ENDINGS, ENDING_STAT_MIN, graduationEnding: end, normalizeRaise: norm } = await import("../js/raise.js");
+  const g = (stats = {}, extra = {}) => ({ ...newRaiseState(), stats: { ...newRaiseState().stats, ...stats }, ...extra });
+  assert.equal(end(g()).id, "ordinary");
+  assert.equal(end(g({ art: ENDING_STAT_MIN })).id, "art");
+  assert.equal(end(g({ art: ENDING_STAT_MIN - 1 })).id, "ordinary");
+  assert.equal(end(g({ math: 300, english: 200 })).id, "math", "最高的那項");
+  assert.equal(end(g({ math: 300 }, { stress: 95 })).id, "burnout", "壓力太大優先");
+  const allA = { chinese: 160, math: 160, science: 160, social: 160, english: 160 },
+    passes = Object.fromEntries(Array.from({ length: 20 }, (_, k) => [k, { pass: true }]));
+  assert.equal(end(g(allA, { examResults: passes })).id, "honors");
+  assert.equal(end(g(allA)).id, "chinese", "考試沒過夠就不是榮譽畢業");
+  assert.equal(end(g({ grace: 60 }), 3000).id, "cafeowner");
+  // 每個能力值都有對應的專長結局
+  for (const k of Object.keys(newRaiseState().stats)) assert.ok(ENDINGS.some((e) => e.id === k), k);
+  assert.equal(norm({ month: 70, ending: "art" }).ending, "art");
+  console.log("endings ✅");
+}
