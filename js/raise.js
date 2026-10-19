@@ -134,11 +134,14 @@ export function applySlot(raise, id, quiz = null) {
     for (const [k, v] of Object.entries(a.gain || {}))
       delta.stats[k] = r.stress >= STRESS_HIGH && a.kind === "class" ? Math.max(1, Math.floor(v / 2)) : v;
   for (const [k, v] of Object.entries(delta.stats)) r.stats[k] = clamp((r.stats[k] || 0) + v, 0, STAT_MAX);
-  const before = r.stress;
-  r.stress = clamp(before + (a.stress || 0), 0, 100);
+  const before = r.stress,
+    add = a.stress > 0 ? Math.max(1, a.stress - staminaRelief(r)) : a.stress || 0;
+  r.stress = clamp(before + add, 0, 100);
   delta.stress = r.stress - before;
   return { raise: r, delta };
 }
+// 體力好比較不累：每 50 點體力，上課／才藝／打工的壓力 −1（最多 −4，至少還是 +1）
+export const staminaRelief = (raise) => Math.min(4, Math.floor((raise.stats.stamina || 0) / 50));
 // 一個月的格子：考試月的下旬固定是考試
 export function slotPlan(month) {
   const exam = monthInfo(month).exam;

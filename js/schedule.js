@@ -5,7 +5,7 @@ import { audio } from "../audio.js";
 import { startExamSession, startLessonQuiz } from "./academy.js";
 import { defaultAvatar, normalizeAvatar, renderAvatar } from "./avatar.js";
 import { activePetKey, celebrateChapter, petCoins, petData, petName, petStats, petSubnavHtml, recordStoryEvent, savePetData, showPetHome } from "./pet.js";
-import { ACTIVITIES, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applyEventChoice, applySlot, blockReason, choiceBlocked, endingById, eventById, examPasses, graduationEnding, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, pickMonthEvent, slotPlan, startMonthForChapter } from "./raise.js";
+import { ACTIVITIES, ENDINGS, KIND_LABEL, SLOTS, STATS, STRESS_HIGH, TOTAL_MONTHS, activityById, applyEventChoice, applySlot, blockReason, choiceBlocked, endingById, eventById, examPasses, graduationEnding, feeOf, monthCost, monthInfo, newRaiseState, normalizeRaise, pickMonthEvent, staminaRelief, slotPlan, startMonthForChapter } from "./raise.js";
 import { STORY, currentChapter, examPassed, normalizeStory, skipChapter } from "./story.js";
 import { tripPhoto } from "./trip.js";
 import { $, escapeHtml, showSheet } from "./ui.js";
@@ -99,6 +99,7 @@ export function schedulePageHtml() {
     <div class="sched-hero"><div class="sched-avatar">${avatar}</div>${statsHtml(r)}</div>
     <div class="pm-goldrow"><span class="pm-label">GOLD</span><span class="pm-vals">${petCoins()} G</span><span class="pm-label">本月花費</span><span class="pm-vals">${cost} G</span></div>
     ${info.exam ? `<p class="sched-note">📝 這個月下旬是 <b>${escapeHtml(exam?.name || "")}</b>，前兩旬可以先上課衝刺喵！</p>` : ""}
+    ${staminaRelief(r) ? `<p class="sched-note">💪 體力 ${r.stats.stamina}：上課、才藝、打工的壓力每次少 ${staminaRelief(r)}</p>` : ""}
     ${r.stress >= STRESS_HIGH ? `<p class="sched-note warn">😣 壓力太大了，上課和才藝課只學得進一半，先排休息吧。</p>` : ""}
     ${resume || `<div class="sched-slots">${slots}</div>
     <button class="pm-bigbtn" data-sched-run="1"${ready && !poor ? "" : " disabled"}>${!ready ? "先把三旬都排好" : poor ? "🪙 金幣不夠，改排打工吧" : "▶ 開始這個月"}</button>`}
@@ -108,8 +109,9 @@ export function schedulePageHtml() {
 
 // ---------- 畢業結局 ----------
 function graduationHtml(r, name) {
-  if (!endingById(r.ending)) saveRaise({ ...r, ending: graduationEnding(r, petCoins()).id }); // 舊存檔：畢業了還沒定結局
+  if (!endingById(r.ending) || !endingsSeen().includes(r.ending)) setEnding(r); // 舊存檔：還沒定結局或還沒進圖鑑
   const e = endingById(raiseState().ending),
+    seen = endingsSeen(),
     avatar = renderAvatar(normalizeAvatar(petData.avatar || defaultAvatar()), { size: 180, grade: 9 });
   return `${petSubnavHtml("schedule")}<div class="pm-panel sched-panel">
     <div class="pm-strip"><span>🎓 畢業典禮</span><span>${TOTAL_MONTHS}/${TOTAL_MONTHS} 月</span></div>
@@ -120,7 +122,27 @@ function graduationHtml(r, name) {
     <p class="sched-note">🐱 ${escapeHtml(name)}：「${escapeHtml(e.cat)}」</p>
     <div class="pm-goldrow"><span class="pm-label">考試及格</span><span class="pm-vals">${examPasses(r)} / 24 場</span><span class="pm-label">GOLD</span><span class="pm-vals">${petCoins()} G</span></div>
     ${statsHtml(r)}
+    <div class="pm-strip"><span>📖 結局圖鑑</span><span>${seen.length}/${ENDINGS.length}</span></div>
+    <div class="sched-endings">${ENDINGS.map((x) => (seen.includes(x.id) ? `<span title="${escapeHtml(x.title)}">${x.icon}<small>${escapeHtml(x.title)}</small></span>` : `<span class="locked">❔<small>？？？</small></span>`)).join("")}</div>
+    <button class="pm-bigbtn" data-sched-restart="1">🌱 再養一次</button>
+    <p class="unit-hint">從四年級 9 月重新開始：月曆、能力值和主線章節歸零；金幣（至少補到 500G）、貓咪、換裝和相簿都會留著。</p>
   </div>`;
+}
+const endingsSeen = () => (Array.isArray(petData.endingsSeen) ? petData.endingsSeen : []);
+function setEnding(r) {
+  if (!endingById(r.ending)) r.ending = graduationEnding(r, petCoins()).id;
+  if (!endingsSeen().includes(r.ending)) petData.endingsSeen = [...endingsSeen(), r.ending];
+  saveRaise(r);
+}
+function confirmRestart() {
+  showSheet("🌱 再養一次？", `<p class="sched-event-text">回到四年級 9 月，能力值、壓力和主線章節都會歸零。<br>已經看過的結局會留在圖鑑裡。</p>`, "重新開始", () => {
+    petData.raise = newRaiseState();
+    petData.story = null;
+    petData.raiseDraft = [];
+    petData.coins = Math.max(petCoins(), 500); // 新的一輪至少有 500G 零用錢
+    savePetData();
+    showPetHome();
+  }, "再想想");
 }
 
 // ---------- 跑一個月 ----------
@@ -204,13 +226,17 @@ function finishMonth() {
   r.pending = null;
   r.event = r.month + 1 < TOTAL_MONTHS ? pickMonthEvent(r, r.month)?.id || null : null;
   r.month += 1;
-  if (graduated(r)) r.ending = graduationEnding(r, petCoins()).id;
-  saveRaise(r);
+  if (graduated(r)) setEnding(r);
+  else saveRaise(r);
   audio.playJingle?.();
   const next = graduated(r) ? "🎓 九年級畢業！去看看畢業典禮吧" : `下個月：${monthInfo(r.month).label}`;
+  // 6 月＝學年結束：這一年的 4 場考試
+  const year = done.grade - 4,
+    yearPass = [0, 1, 2, 3].filter((i) => r.examResults[year * 4 + i]?.pass).length,
+    recap = done.calMonth === 6 ? `<p class="sched-note">🎒 ${done.label.split("・")[0]}這一年結束了：考試及格 ${yearPass} / 4 場${yearPass === 4 ? "，全部過關！" : ""}</p>` : "";
   showSheet(
     `🗓️ ${done.label} 結束`,
-    `${deltaHtml({ ...total, stress: 0 })}<p class="unit-hint">😣 目前壓力 ${r.stress}・🪙 ${petCoins()}G</p><p class="unit-hint">${next}</p>`,
+    `${deltaHtml({ ...total, stress: 0 })}<p class="unit-hint">😣 目前壓力 ${r.stress}・🪙 ${petCoins()}G</p>${recap}<p class="unit-hint">${next}</p>`,
     r.event ? "繼續" : graduated(r) ? "🎓 去畢業典禮" : "排下個月",
     r.event ? showEvent : showPetHome,
   );
@@ -240,6 +266,10 @@ function chooseEvent(i) {
 export function handleScheduleClick(e) {
   if (e.target.closest("[data-sched-run]")) {
     runMonth();
+    return true;
+  }
+  if (e.target.closest("[data-sched-restart]")) {
+    confirmRestart();
     return true;
   }
   if (e.target.closest("[data-sched-event]")) {

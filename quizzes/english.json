@@ -887,6 +887,1046 @@
       "tip": "take off 是「脫掉（衣物、鞋子）」的片語動詞。",
       "explain": "片語動詞 take 加上不同介系詞意思不同：take off 脫掉（衣物、鞋子），take on 承擔，take up 開始從事（嗜好），take after（外貌或性格）像（某位長輩）。題目中文提示「把鞋子脫掉」，所以用 take off：Please take off your shoes before you come in.",
       "term": "7-2"
+    },
+    {
+      "id": "english-x41-01",
+      "grade": 4,
+      "term": "4-1",
+      "type": "choice",
+      "prompt": "A: How's the weather? B: Look! It's ___. I need an umbrella.",
+      "options": [
+        "rainy",
+        "sunny",
+        "snowy",
+        "windy"
+      ],
+      "answer": 0,
+      "tip": "要帶雨傘，是什麼天氣？",
+      "explain": "umbrella（雨傘）是下雨天用的，所以天氣是 rainy。"
+    },
+    {
+      "id": "english-x41-02",
+      "grade": 4,
+      "term": "4-1",
+      "type": "choice",
+      "prompt": "A: Are you thirsty? B: Yes, I am. I want some ___.",
+      "options": [
+        "pizza",
+        "water",
+        "bread",
+        "rice"
+      ],
+      "answer": 1,
+      "tip": "口渴想要喝的東西。",
+      "explain": "thirsty 是口渴，應該要喝 water；其他都是食物。"
+    },
+    {
+      "id": "english-x41-03",
+      "grade": 4,
+      "term": "4-1",
+      "type": "choice",
+      "prompt": "A: What are these? B: ___ are erasers.",
+      "options": [
+        "It",
+        "This",
+        "They",
+        "That"
+      ],
+      "answer": 2,
+      "tip": "問 these（複數），答複數代名詞。",
+      "explain": "these 是複數，回答用 They are...。"
+    },
+    {
+      "id": "english-x41-04",
+      "grade": 4,
+      "term": "4-1",
+      "type": "choice",
+      "prompt": "A: Do you want some pizza? B: Yes, ___.",
+      "options": [
+        "you're welcome",
+        "goodbye",
+        "sorry",
+        "please"
+      ],
+      "answer": 3,
+      "tip": "想要別人給你東西時說什麼？",
+      "explain": "接受別人提供的東西時，禮貌說 Yes, please."
+    },
+    {
+      "id": "english-x41-05",
+      "grade": 4,
+      "term": "4-1",
+      "type": "choice",
+      "prompt": "A: What color is a banana? B: It's ___.",
+      "options": [
+        "yellow",
+        "blue",
+        "red",
+        "purple"
+      ],
+      "answer": 0,
+      "tip": "香蕉熟了是什麼顏色？",
+      "explain": "香蕉通常是黃色，yellow。"
+    },
+    {
+      "id": "english-x42-01",
+      "grade": 4,
+      "term": "4-2",
+      "type": "choice",
+      "prompt": "It's seven o'clock. It's time ___ get up.",
+      "options": [
+        "at",
+        "to",
+        "in",
+        "on"
+      ],
+      "answer": 1,
+      "tip": "time to + 原形動詞。",
+      "explain": "It's time to + 動詞原形 表示「該做某事了」。"
+    },
+    {
+      "id": "english-x42-02",
+      "grade": 4,
+      "term": "4-2",
+      "type": "choice",
+      "prompt": "A: Who is he? B: ___ is my brother.",
+      "options": [
+        "She",
+        "It",
+        "He",
+        "They"
+      ],
+      "answer": 2,
+      "tip": "問 he，答 he。",
+      "explain": "問句主詞是 he（男生），回答也用 He。"
+    },
+    {
+      "id": "english-x42-03",
+      "grade": 4,
+      "term": "4-2",
+      "type": "choice",
+      "prompt": "Which word is a fruit?",
+      "options": [
+        "bread",
+        "milk",
+        "rice",
+        "apple"
+      ],
+      "answer": 3,
+      "tip": "水果是樹上或藤上長的甜食。",
+      "explain": "apple（蘋果）是水果，bread 麵包、milk 牛奶、rice 米飯都不是。"
+    },
+    {
+      "id": "english-x42-04",
+      "grade": 4,
+      "term": "4-2",
+      "type": "choice",
+      "prompt": "A tall animal with a long neck is a ___.",
+      "options": [
+        "giraffe",
+        "monkey",
+        "rabbit",
+        "tiger"
+      ],
+      "answer": 0,
+      "tip": "脖子很長的動物。",
+      "explain": "giraffe 是長頸鹿，有長長的脖子。"
+    },
+    {
+      "id": "english-x51-01",
+      "grade": 5,
+      "term": "5-1",
+      "type": "choice",
+      "prompt": "Let's make a fruit salad. First, ___ the apples.",
+      "options": [
+        "cuts",
+        "cut",
+        "cutting",
+        "cutted"
+      ],
+      "answer": 1,
+      "tip": "祈使句用原形動詞。",
+      "explain": "食譜步驟用祈使句，動詞直接用原形 cut。"
+    },
+    {
+      "id": "english-x51-02",
+      "grade": 5,
+      "term": "5-1",
+      "type": "choice",
+      "prompt": "A: How often do you play basketball? B: ___.",
+      "options": [
+        "Two kilometers",
+        "At six",
+        "Once a week",
+        "For two hours"
+      ],
+      "answer": 2,
+      "tip": "How often 問頻率。",
+      "explain": "How often 問「多常」，回答頻率，如 once a week（一週一次）。"
+    },
+    {
+      "id": "english-x51-03",
+      "grade": 5,
+      "term": "5-1",
+      "type": "choice",
+      "prompt": "My sister doesn't ___ breakfast.",
+      "options": [
+        "eats",
+        "eating",
+        "ate",
+        "eat"
+      ],
+      "answer": 3,
+      "tip": "doesn't 後面接原形。",
+      "explain": "助動詞 doesn't 後面動詞要用原形 eat。"
+    },
+    {
+      "id": "english-x51-04",
+      "grade": 5,
+      "term": "5-1",
+      "type": "choice",
+      "prompt": "Which word means 星期三?",
+      "options": [
+        "Wednesday",
+        "Thursday",
+        "Tuesday",
+        "Monday"
+      ],
+      "answer": 0,
+      "tip": "Wednes-day，中間有 d 不發音。",
+      "explain": "Wednesday 是星期三，Tuesday 星期二，Thursday 星期四。"
+    },
+    {
+      "id": "english-x52-01",
+      "grade": 5,
+      "term": "5-2",
+      "type": "choice",
+      "prompt": "A: What's wrong? B: I have a ___. I need to see a dentist.",
+      "options": [
+        "headache",
+        "toothache",
+        "stomachache",
+        "cold"
+      ],
+      "answer": 1,
+      "tip": "看牙醫是因為哪裡痛？",
+      "explain": "dentist 是牙醫，所以是 toothache（牙痛）。"
+    },
+    {
+      "id": "english-x52-02",
+      "grade": 5,
+      "term": "5-2",
+      "type": "choice",
+      "prompt": "There ___ some milk in the fridge.",
+      "options": [
+        "are",
+        "am",
+        "is",
+        "be"
+      ],
+      "answer": 2,
+      "tip": "milk 是不可數名詞。",
+      "explain": "milk 為不可數名詞，視為單數，用 There is。"
+    },
+    {
+      "id": "english-x52-03",
+      "grade": 5,
+      "term": "5-2",
+      "type": "choice",
+      "prompt": "A: How can I get to the post office? B: ___ at the corner.",
+      "options": [
+        "Turning left",
+        "Turns left",
+        "Turned left",
+        "Turn left"
+      ],
+      "answer": 3,
+      "tip": "指路時用祈使句。",
+      "explain": "指路常用祈使句，動詞用原形：Turn left."
+    },
+    {
+      "id": "english-x61-01",
+      "grade": 6,
+      "term": "6-1",
+      "type": "choice",
+      "prompt": "I ___ going to visit my aunt next Sunday.",
+      "options": [
+        "am",
+        "is",
+        "are",
+        "do"
+      ],
+      "answer": 0,
+      "tip": "主詞 I 搭配哪個 be 動詞？",
+      "explain": "be going to 的 be 動詞要配合主詞，I 用 am。"
+    },
+    {
+      "id": "english-x61-02",
+      "grade": 6,
+      "term": "6-1",
+      "type": "choice",
+      "prompt": "He wants to be a ___ because he likes helping sick people.",
+      "options": [
+        "farmer",
+        "doctor",
+        "pilot",
+        "singer"
+      ],
+      "answer": 1,
+      "tip": "幫助生病的人。",
+      "explain": "幫助病人的職業是 doctor（醫生）。"
+    },
+    {
+      "id": "english-x62-01",
+      "grade": 6,
+      "term": "6-2",
+      "type": "choice",
+      "prompt": "She ___ a beautiful picture yesterday.",
+      "options": [
+        "draws",
+        "drawed",
+        "drew",
+        "drawn"
+      ],
+      "answer": 2,
+      "tip": "draw 是不規則動詞。",
+      "explain": "yesterday 表示過去，draw 的過去式是 drew。"
+    },
+    {
+      "id": "english-x71-01",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "___ your parents at home now?",
+      "options": [
+        "Is",
+        "Am",
+        "Do",
+        "Are"
+      ],
+      "answer": 3,
+      "tip": "your parents 是複數。",
+      "explain": "主詞 your parents 是複數，be 動詞用 Are。"
+    },
+    {
+      "id": "english-x71-02",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "There are two ___ in the kitchen.",
+      "options": [
+        "knives",
+        "knifes",
+        "knife",
+        "knive"
+      ],
+      "answer": 0,
+      "tip": "名詞字尾 -fe 要變 -ves。",
+      "explain": "knife 的複數是把 f(e) 改成 v 再加 es：knives。"
+    },
+    {
+      "id": "english-x71-03",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "Tom ___ not like carrots.",
+      "options": [
+        "do",
+        "does",
+        "is",
+        "are"
+      ],
+      "answer": 1,
+      "tip": "第三人稱單數的否定。",
+      "explain": "Tom 是第三人稱單數，否定用 does not。"
+    },
+    {
+      "id": "english-x71-04",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "A: ___ is your birthday? B: It's on June 5.",
+      "options": [
+        "Where",
+        "Who",
+        "When",
+        "How"
+      ],
+      "answer": 2,
+      "tip": "回答是日期，問什麼？",
+      "explain": "回答是日期，所以用 When 問時間。"
+    },
+    {
+      "id": "english-x71-05",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "Ms. Lin is a teacher. ___ students like her.",
+      "options": [
+        "She",
+        "Hers",
+        "Herself",
+        "Her"
+      ],
+      "answer": 3,
+      "tip": "放在名詞前表示「她的」。",
+      "explain": "名詞 students 前面要用所有格形容詞 Her。"
+    },
+    {
+      "id": "english-x71-06",
+      "grade": 7,
+      "term": "7-1",
+      "type": "choice",
+      "prompt": "Which sentence is correct?",
+      "options": [
+        "He has two babies.",
+        "He has two babys.",
+        "He have two babies.",
+        "He has two baby's."
+      ],
+      "answer": 0,
+      "tip": "子音＋y 的複數要變 ies。",
+      "explain": "baby 的複數是 babies；He 搭配 has。"
+    },
+    {
+      "id": "english-x81-01",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "Tom ___ come to school yesterday because he was sick.",
+      "options": [
+        "doesn't",
+        "didn't",
+        "don't",
+        "wasn't"
+      ],
+      "answer": 1,
+      "tip": "yesterday 是過去式。",
+      "explain": "yesterday 為過去，一般動詞否定用 didn't + 原形。"
+    },
+    {
+      "id": "english-x81-02",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "While my mom ___ dinner, the phone rang.",
+      "options": [
+        "cooked",
+        "is cooking",
+        "was cooking",
+        "cooks"
+      ],
+      "answer": 2,
+      "tip": "過去某時正在進行的動作。",
+      "explain": "while 引導正在進行的動作，用過去進行式 was cooking。"
+    },
+    {
+      "id": "english-x81-03",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "Mt. Jade is the ___ mountain in Taiwan.",
+      "options": [
+        "higher",
+        "high",
+        "more high",
+        "highest"
+      ],
+      "answer": 3,
+      "tip": "the + 最高級。",
+      "explain": "有 the 和 in Taiwan，要用最高級 highest。"
+    },
+    {
+      "id": "english-x81-04",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "She sings very ___.",
+      "options": [
+        "beautifully",
+        "beautiful",
+        "beauty",
+        "beautify"
+      ],
+      "answer": 0,
+      "tip": "修飾動詞要用副詞。",
+      "explain": "修飾動詞 sings 要用副詞 beautifully。"
+    },
+    {
+      "id": "english-x81-05",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "I was tired, ___ I went to bed early.",
+      "options": [
+        "because",
+        "so",
+        "but",
+        "or"
+      ],
+      "answer": 1,
+      "tip": "前面是原因，後面是結果。",
+      "explain": "tired 是原因，went to bed 是結果，用 so（所以）。"
+    },
+    {
+      "id": "english-x81-06",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "How ___ water do you drink every day?",
+      "options": [
+        "many",
+        "few",
+        "much",
+        "a few"
+      ],
+      "answer": 2,
+      "tip": "water 是不可數名詞。",
+      "explain": "water 不可數，問量用 How much。"
+    },
+    {
+      "id": "english-x81-07",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "My sister enjoys ___ pictures.",
+      "options": [
+        "take",
+        "to take",
+        "took",
+        "taking"
+      ],
+      "answer": 3,
+      "tip": "enjoy 後面接動名詞。",
+      "explain": "enjoy 後面要接 V-ing，所以是 taking。"
+    },
+    {
+      "id": "english-x81-08",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "A: ___ did you go to the park? B: By bike.",
+      "options": [
+        "How",
+        "What",
+        "Who",
+        "Why"
+      ],
+      "answer": 0,
+      "tip": "回答是交通方式。",
+      "explain": "By bike 說明方式，用 How 來問。"
+    },
+    {
+      "id": "english-x81-09",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "You didn't eat breakfast, ___?",
+      "options": [
+        "didn't you",
+        "did you",
+        "do you",
+        "don't you"
+      ],
+      "answer": 1,
+      "tip": "前否定，後肯定。",
+      "explain": "前句是否定的過去式，附加問句用肯定 did you。"
+    },
+    {
+      "id": "english-x81-10",
+      "grade": 7,
+      "term": "8-1",
+      "type": "choice",
+      "prompt": "The movie was so ___ that I fell asleep.",
+      "options": [
+        "bored",
+        "bore",
+        "boring",
+        "bores"
+      ],
+      "answer": 2,
+      "tip": "形容事物「令人感到…」。",
+      "explain": "形容電影本身無聊用 boring；bored 是形容人感到無聊。"
+    },
+    {
+      "id": "english-x82-01",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "It's cloudy. It ___ rain soon.",
+      "options": [
+        "are going to",
+        "going to",
+        "will going to",
+        "is going to"
+      ],
+      "answer": 3,
+      "tip": "主詞 it 用哪個 be？",
+      "explain": "有跡象推測的未來用 be going to，it 搭配 is。"
+    },
+    {
+      "id": "english-x82-02",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "If it ___ tomorrow, we will stay home.",
+      "options": [
+        "rains",
+        "will rain",
+        "rained",
+        "is raining"
+      ],
+      "answer": 0,
+      "tip": "if 子句用現在式代替未來。",
+      "explain": "條件句 if 子句中用現在簡單式表示未來：rains。"
+    },
+    {
+      "id": "english-x82-03",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "I decided ___ a new bike.",
+      "options": [
+        "buy",
+        "to buy",
+        "buying",
+        "bought"
+      ],
+      "answer": 1,
+      "tip": "decide 後面接不定詞。",
+      "explain": "decide 後面要接 to + 原形動詞。"
+    },
+    {
+      "id": "english-x82-04",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "You ___ eat in the library. It's against the rules.",
+      "options": [
+        "don't have to",
+        "may",
+        "mustn't",
+        "can"
+      ],
+      "answer": 2,
+      "tip": "違反規定＝禁止。",
+      "explain": "mustn't 表示禁止；don't have to 只是不必要。"
+    },
+    {
+      "id": "english-x82-05",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "Would you like ___ to the movies with us?",
+      "options": [
+        "going",
+        "go",
+        "went",
+        "to go"
+      ],
+      "answer": 3,
+      "tip": "would like 後接不定詞。",
+      "explain": "would like + to + 原形動詞，所以是 to go。"
+    },
+    {
+      "id": "english-x82-06",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "He is as tall ___ his father.",
+      "options": [
+        "as",
+        "than",
+        "like",
+        "so"
+      ],
+      "answer": 0,
+      "tip": "as ... as 同等比較。",
+      "explain": "同等比較句型是 as + 形容詞 + as。"
+    },
+    {
+      "id": "english-x82-07",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "A: ___ does it take to get to school? B: About 15 minutes.",
+      "options": [
+        "How far",
+        "How long",
+        "How often",
+        "How much"
+      ],
+      "answer": 1,
+      "tip": "回答是一段時間。",
+      "explain": "問花多久時間用 How long。"
+    },
+    {
+      "id": "english-x82-08",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "I don't like spiders. My sister doesn't like them, ___.",
+      "options": [
+        "too",
+        "so",
+        "either",
+        "neither"
+      ],
+      "answer": 2,
+      "tip": "否定句的「也」。",
+      "explain": "否定句中表示「也不」要放句尾用 either，too 用在肯定句。"
+    },
+    {
+      "id": "english-x82-09",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "A: Let's go hiking this weekend. B: ___",
+      "options": [
+        "Yes, I am.",
+        "No, you aren't.",
+        "I'm fine.",
+        "Great idea!"
+      ],
+      "answer": 3,
+      "tip": "對提議的回應。",
+      "explain": "Let's 是提議，適當回應是 Great idea!。"
+    },
+    {
+      "id": "english-x82-10",
+      "grade": 7,
+      "term": "8-2",
+      "type": "choice",
+      "prompt": "She asked me ___ I wanted tea or coffee.",
+      "options": [
+        "whether",
+        "that",
+        "what",
+        "because"
+      ],
+      "answer": 0,
+      "tip": "後面有 or，表示二選一。",
+      "explain": "whether ... or 表示「是否…還是…」，符合句意。"
+    },
+    {
+      "id": "english-x91-01",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "I ___ Mr. Wang since 2018.",
+      "options": [
+        "know",
+        "have known",
+        "knew",
+        "am knowing"
+      ],
+      "answer": 1,
+      "tip": "since 搭配現在完成式。",
+      "explain": "since 2018 表示從過去持續到現在，用現在完成式 have known。"
+    },
+    {
+      "id": "english-x91-02",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "Many English books ___ in this shop.",
+      "options": [
+        "sell",
+        "are selling",
+        "are sold",
+        "sold"
+      ],
+      "answer": 2,
+      "tip": "書是「被賣」。",
+      "explain": "書是被販賣的，用被動語態 are sold。"
+    },
+    {
+      "id": "english-x91-03",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "The girl ___ is singing on the stage is my sister.",
+      "options": [
+        "which",
+        "whose",
+        "what",
+        "who"
+      ],
+      "answer": 3,
+      "tip": "先行詞是人，做主詞。",
+      "explain": "先行詞 the girl 是人，關係代名詞主格用 who。"
+    },
+    {
+      "id": "english-x91-04",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "Do you know where ___?",
+      "options": [
+        "he lives",
+        "does he live",
+        "he live",
+        "lives he"
+      ],
+      "answer": 0,
+      "tip": "間接問句用直述句順序。",
+      "explain": "間接問句要用直述句語序：where he lives。"
+    },
+    {
+      "id": "english-x91-05",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "Have you ever ___ sushi?",
+      "options": [
+        "ate",
+        "eaten",
+        "eat",
+        "eating"
+      ],
+      "answer": 1,
+      "tip": "have + 過去分詞。",
+      "explain": "現在完成式 have + p.p.，eat 的過去分詞是 eaten。"
+    },
+    {
+      "id": "english-x91-06",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "Where is Tom? He ___ to the library. He isn't here.",
+      "options": [
+        "has been",
+        "have gone",
+        "has gone",
+        "had been"
+      ],
+      "answer": 2,
+      "tip": "去了還沒回來。",
+      "explain": "has gone to 表示去了而人還不在；has been to 表示去過。"
+    },
+    {
+      "id": "english-x91-07",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "The window ___ by Tom yesterday.",
+      "options": [
+        "broke",
+        "is broken",
+        "was breaking",
+        "was broken"
+      ],
+      "answer": 3,
+      "tip": "窗戶是「被打破」。",
+      "explain": "過去被動：was/were + 過去分詞，所以是 was broken。"
+    },
+    {
+      "id": "english-x91-08",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "I'm interested ___ learning Japanese.",
+      "options": [
+        "in",
+        "at",
+        "on",
+        "for"
+      ],
+      "answer": 0,
+      "tip": "be interested in。",
+      "explain": "固定用法：be interested in + V-ing。"
+    },
+    {
+      "id": "english-x91-09",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "She is so busy ___ she has no time to eat lunch.",
+      "options": [
+        "than",
+        "that",
+        "because",
+        "but"
+      ],
+      "answer": 1,
+      "tip": "so ... that 如此…以致於。",
+      "explain": "so + 形容詞 + that 表示「如此…以致於…」。"
+    },
+    {
+      "id": "english-x91-10",
+      "grade": 7,
+      "term": "9-1",
+      "type": "choice",
+      "prompt": "He is old enough ___ drive a car.",
+      "options": [
+        "for",
+        "that",
+        "to",
+        "of"
+      ],
+      "answer": 2,
+      "tip": "enough to + 原形動詞。",
+      "explain": "形容詞 + enough + to V 表示「夠…可以做…」。"
+    },
+    {
+      "id": "english-x92-01",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "If I ___ you, I would study harder.",
+      "options": [
+        "am",
+        "will be",
+        "have been",
+        "were"
+      ],
+      "answer": 3,
+      "tip": "與現在事實相反的假設。",
+      "explain": "與現在事實相反的假設，if 子句 be 動詞用 were。"
+    },
+    {
+      "id": "english-x92-02",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "I wish I ___ fly like a bird.",
+      "options": [
+        "could",
+        "can",
+        "will",
+        "am able"
+      ],
+      "answer": 0,
+      "tip": "wish 後面用過去式助動詞。",
+      "explain": "wish 表示不可能實現的願望，後面用過去式 could。"
+    },
+    {
+      "id": "english-x92-03",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Amy said, \"I am busy.\" → Amy said that she ___ busy.",
+      "options": [
+        "is",
+        "was",
+        "were",
+        "will be"
+      ],
+      "answer": 1,
+      "tip": "間接引述時態往前退一格。",
+      "explain": "轉述過去的話，現在式要改成過去式：am → was。"
+    },
+    {
+      "id": "english-x92-04",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "When I arrived at the station, the train ___ already left.",
+      "options": [
+        "has",
+        "have",
+        "had",
+        "was"
+      ],
+      "answer": 2,
+      "tip": "比過去更早發生的事。",
+      "explain": "到達之前火車就開走了，用過去完成式 had + p.p.。"
+    },
+    {
+      "id": "english-x92-05",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "The man ___ in the corner is my uncle.",
+      "options": [
+        "sat",
+        "sits",
+        "to sit",
+        "sitting"
+      ],
+      "answer": 3,
+      "tip": "可由 who is sitting 簡化而來。",
+      "explain": "who is sitting 可省略為現在分詞片語 sitting 修飾 man。"
+    },
+    {
+      "id": "english-x92-06",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Please ___ the lights when you leave the room.",
+      "options": [
+        "turn off",
+        "turn up",
+        "turn into",
+        "turn over"
+      ],
+      "answer": 0,
+      "tip": "離開房間要把燈怎麼樣？",
+      "explain": "turn off 是關掉；turn up 是調大，turn into 是變成。"
+    },
+    {
+      "id": "english-x92-07",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Neither Tom ___ his sisters like spicy food.",
+      "options": [
+        "or",
+        "nor",
+        "and",
+        "but"
+      ],
+      "answer": 1,
+      "tip": "neither 的固定搭配。",
+      "explain": "neither ... nor ... 表示「既不…也不…」。"
+    },
+    {
+      "id": "english-x92-08",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Not only Amy but also her brothers ___ at the party.",
+      "options": [
+        "was",
+        "is",
+        "were",
+        "am"
+      ],
+      "answer": 2,
+      "tip": "動詞與靠近的主詞一致。",
+      "explain": "not only ... but also 動詞依靠近的主詞 brothers（複數），用 were。"
+    },
+    {
+      "id": "english-x92-09",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Eating too much sugar is bad ___ your health.",
+      "options": [
+        "to",
+        "at",
+        "in",
+        "for"
+      ],
+      "answer": 3,
+      "tip": "bad for 對…有害。",
+      "explain": "be bad for 表示「對…有害」。"
+    },
+    {
+      "id": "english-x92-10",
+      "grade": 7,
+      "term": "9-2",
+      "type": "choice",
+      "prompt": "Which word is closest in meaning to \"enormous\"?",
+      "options": [
+        "huge",
+        "tiny",
+        "quiet",
+        "cheap"
+      ],
+      "answer": 0,
+      "tip": "enormous 是很大的意思。",
+      "explain": "enormous 意為極大的，與 huge 同義；tiny 是極小。"
     }
   ]
 }

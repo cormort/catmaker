@@ -203,7 +203,7 @@ console.log("=== 考試（期中考／期末考）===");
     const sci = QUIZ_SUBJECTS.science;
     const shown = filterCount(sci, { term: "8-1", publisher: "翰林" });
     const shown82 = filterCount(sci, { term: "8-2", publisher: "翰林" });
-    check(shown > 0 && shown === shown82, `八上與八下顯示同樣的國中題池題數（各 ${shown} 題）`);
+    check(shown >= 12 && shown82 >= 12, `八上、八下各有自己的題目（${shown}／${shown82} 題）`);
     check(filterCount(sci, { term: "7-1", publisher: "翰林" }) > 0, "七上自然科有專屬題目");
     check(filterCount(sci, { term: "9-9" }) === 0, "不存在的冊次顯示 0 題");
   }

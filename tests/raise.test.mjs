@@ -105,3 +105,14 @@ console.log("raise ✅");
   assert.equal(norm({ month: 70, ending: "art" }).ending, "art");
   console.log("endings ✅");
 }
+
+// 體力減壓
+{
+  const { applySlot: apply, staminaRelief } = await import("../js/raise.js");
+  const strong = { ...newRaiseState(), stats: { ...newRaiseState().stats, stamina: 120 } };
+  assert.equal(staminaRelief(strong), 2);
+  assert.equal(apply(strong, "store").delta.stress, 10 - 2);
+  assert.equal(apply({ ...strong, stats: { ...strong.stats, stamina: 999 } }, "sports").delta.stress, 1, "至少 +1");
+  assert.equal(apply({ ...strong, stress: 50 }, "home").delta.stress, -15, "休息不受影響");
+  console.log("stamina ✅");
+}

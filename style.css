@@ -5757,3 +5757,23 @@ label {
     text-align: center;
   }
 }
+.sched-endings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+  text-align: center;
+  font-size: 1.5rem;
+}
+.sched-endings span {
+  display: grid;
+  gap: 2px;
+  padding: 6px 2px;
+  background: var(--pm-black-2);
+}
+.sched-endings small {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+.sched-endings .locked {
+  opacity: 0.45;
+}
