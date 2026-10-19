@@ -99,8 +99,8 @@ export function randomAvatar(rng = Math.random) {
 }
 
 // ── 隨年級長大 ──
-// 每個年級一個身體（base_g4 … base_g9）；衣服共用同一組圖層（以 g4 身體對齊畫的），
-// 依各階段身體的錨點把每種圖層「寬、高分開」縮放再平移，所以不用為每個年級重畫衣服。
+// 每個年級一個身體（base_g4 … base_g9），每個年級也有自己一整套換裝圖層（icons/avatar/g4/ … g9/），
+// 都是直接畫在該年級身體上再摳出來的（tools/avatar_redraw.py），所以不用縮放對位，原圖疊上去就合身。
 export const GROWTH_GRADES = [4, 5, 6, 7, 8, 9];
 
 // 各階段錨點（512x512 畫布的像素座標），由 tools/measure_avatar.mjs 從身體 PNG 量出來：
@@ -114,8 +114,6 @@ export const STAGE_METRICS = {
   g8: { label: "八年級", headTop: 57, neck: 141, neckL: 246, neckR: 265, headL: 221, headR: 290, collar: 160, crotch: 287, armL: 198, armR: 313, hipL: 219, hipR: 292, ankle: 467, feet: 494, feetL: 232, feetR: 280 },
   g9: { label: "九年級", headTop: 57, neck: 150, neckL: 247, neckR: 264, headL: 214, headR: 296, collar: 163, crotch: 287, armL: 199, armR: 311, hipL: 222, hipR: 288, ankle: 451, feet: 494, feetL: 227, feetR: 284 },
 };
-const REF_STAGE = "g4"; // 衣服圖層是以這個階段的身體對齊的
-
 export function gradeOfTerm(term) {
   const g = parseInt(String(term || "").split("-")[0], 10);
   return Number.isFinite(g) ? Math.min(9, Math.max(4, g)) : 4;
@@ -128,66 +126,8 @@ export function avatarStage(gradeOrTerm) {
 export function stageLabel(gradeOrTerm) {
   return STAGE_METRICS[avatarStage(gradeOrTerm)]?.label || "";
 }
-// 每種圖層跟著哪一段身體走：回傳 [左, 右, 上, 下]（上＝錨點，縮放時固定在這條線上）
-// 頭髮／帽子／眼鏡／耳機跟頭；上衣／圍巾／名牌／背包跟軀幹；褲裙從胯下到腳踝；鞋子以腳底為準
-function regionBox(part, m) {
-  if (part.startsWith("top") || part === "acc_scarf" || part === "acc_badge" || part.startsWith("acc_backpack")) return [m.armL, m.armR, m.collar, m.crotch];
-  if (part.startsWith("bottom")) return [m.hipL, m.hipR, m.crotch, m.ankle];
-  if (part.startsWith("shoes")) return [m.feetL, m.feetR, m.feet, m.feet];
-  if (part.startsWith("hat") || part.startsWith("acc_") || part.startsWith("hair")) return [m.headL, m.headR, m.headTop, m.neck];
-  return null;
-}
-// 上衣各自的 [上緣, 下襬, 加寬]（上緣／下襬是 g4 座標，alpha 量的）。AI 畫的上衣高低胖瘦不一：
-// 有的肩膀太低太窄會露肩，有的下襬碰不到褲裙腰頭會露出一條皮膚，
-// 所以先把每件上衣拉到同一條領口線、下襬至少蓋過腰頭、肩膀窄的加寬，再套年級變形
-const TOP_BOX = { tshirt: [202, 356, 1], hoodie: [220, 373, 1.25], shirt: [202, 352, 1.10], sailor: [203, 342, 1.05], sweater: [222, 354, 1.08], vest: [207, 354, 1] };
-// 褲裙加寬：長裙畫得比兩腿還窄，兩側會露出腿；牛仔褲、運動褲微調包覆小腿外側
-const BOTTOM_WIDEN = { pleat: 1.95, jeans: 1.07, sport: 1.07 };
-// 帽子微調：原位重繪已自帶 100% 精準對位
-const HAT_ADJUST = {
-  straw: { dy: 0, sx: 1.0 },
-  beanie: { dy: 0, sx: 1.0 },
-  beret: { dy: 0, sx: 1.0 },
-  cap: { dy: 0, sx: 1.0 },
-  bow: { dy: 0, sx: 1.0 },
-};
-const TOP_NECK = 202; // 上衣上緣要到的線（脖子根部）
-const TOP_MIN_HEM = 356; // 下襬至少到這裡（褲裙腰頭在 343，至少重疊 13px）
-// 依階段算出圖層的變形：以 (ox, oy) 為原點，寬縮 sx、高縮 sy，再平移 (dx, dy)（像素）
-export function stageTransform(part, gradeOrTerm) {
-  const st = STAGE_METRICS[avatarStage(gradeOrTerm)] || STAGE_METRICS[REF_STAGE];
-  const ref = STAGE_METRICS[REF_STAGE];
-  const r = regionBox(part, ref);
-  const t = regionBox(part, st);
-  if (!r) return { sx: 1, sy: 1, dx: 0, dy: 0, ox: 256, oy: 0 };
-  const sx = (t[1] - t[0]) / (r[1] - r[0]);
-  // 鞋子沒有高度可比，跟寬度等比例縮（腳底不動）
-  const sy = r[3] === r[2] ? sx : (t[3] - t[2]) / (r[3] - r[2]);
-  const ox = (r[0] + r[1]) / 2;
-  const dx = (t[0] + t[1]) / 2 - ox;
-  const box = part.startsWith("top_") && TOP_BOX[part.slice(4)];
-  if (box) {
-    // 先把上衣 [上緣, 下襬] 拉到 [TOP_NECK, 下襬或 TOP_MIN_HEM]，再套年級變形（兩段合成一個變形，原點放在上衣上緣）
-    const k = (Math.max(box[1], TOP_MIN_HEM) - TOP_NECK) / (box[1] - box[0]);
-    return { sx: sx * box[2], sy: sy * k, dx, dy: t[2] - box[0] + sy * (TOP_NECK - r[2]), ox, oy: box[0] };
-  }
-  const widen = (part.startsWith("bottom_") && BOTTOM_WIDEN[part.slice(7)]) || 1;
-  const hatAdj = part.startsWith("hat_") && HAT_ADJUST[part.slice(4)];
-  if (hatAdj) {
-    return {
-      sx: sx * (hatAdj.sx || 1),
-      sy: sy * (hatAdj.sy || 1),
-      dx: dx + (hatAdj.dx || 0),
-      dy: t[2] - r[2] + (hatAdj.dy || 0) * sy,
-      ox,
-      oy: r[2],
-    };
-  }
-  return { sx: sx * widen, sy, dx, dy: t[2] - r[2], ox, oy: r[2] };
-}
-
 // ── 角色繪製（PNG 分層）──
-// 素材在 icons/avatar/：Nano Banana 重繪的彩色 PNG（512x512 對齊，白色／灰階底稿），
+// 素材在 icons/avatar/：Nano Banana 重繪的 PNG（512x512 對齊，白色／灰階底稿；身體 base_gN.png，換裝 gN/<部位>.png），
 // 顏色在遊戲裡用 mix-blend-mode: multiply 疊上去，所以一種形狀一張圖、顏色可換、AI 的陰影保留。
 const ACC_COLOR = { glasses: "#333333", scarf: "#e0574f", backpack: "#8a5a34", headphone: "#3a3a3a", badge: "#c9a227" };
 
@@ -198,6 +138,64 @@ export const SKIN_FILTER = {
   tan: "saturate(1.3) brightness(0.9) sepia(0.24)",
   deep: "saturate(1.45) brightness(0.76) sepia(0.4)",
 };
+
+// 帽子／耳機／蝴蝶結是在各年級的「妹妹頭」上畫的；換成其他髮型時依髮型輪廓微調（tools/fit_head_items.py 量出來寫進來）。
+// 每項 [sx, sy, dx, dy, ox, oy]：以 (ox, oy) 為原點寬縮 sx、高縮 sy，再平移 (dx, dy)（512 畫布像素）。妹妹頭不用調。
+export const HEAD_FIT = {
+  g4: {
+    short: { bow: [1, 1, 4, -5, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 110], headphone: [0.87, 1.049, 0, 0, 256, 147] },
+    bob: { bow: [1, 1, 4, 0, 256, 0] },
+    twin: { bow: [1, 1, 16, 0, 256, 0], hat: [1.05, 1.0, 0, 0, 256, 110], headphone: [1.1, 1.0, 0, 0, 256, 147] },
+    pony: { bow: [1, 1, 12, 12, 256, 0], hat: [1.05, 0.85, 0, 0, 256, 110], headphone: [0.977, 0.883, 0, 0, 256, 147] },
+    curly: { bow: [1, 1, 4, -5, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 110], headphone: [1.1, 1.049, 0, 0, 256, 147] },
+    straight: { bow: [1, 1, 4, 3, 256, 0], hat: [0.955, 0.955, 0, 0, 256, 110], headphone: [0.893, 0.971, 0, 0, 256, 147] },
+  },
+  g5: {
+    short: { bow: [1, 1, 14, 0, 256, 0], hat: [0.939, 1.0, 0, 0, 256, 92], headphone: [0.82, 1.0, 0, 0, 256, 118] },
+    bob: { bow: [1, 1, 14, 0, 256, 0] },
+    twin: { bow: [1, 1, 14, 4, 256, 0], hat: [1.05, 0.9, 0, 0, 256, 92], headphone: [1.0, 0.939, 0, 0, 256, 118] },
+    pony: { bow: [1, 1, 14, 5, 256, 0], hat: [0.983, 0.875, 0, 0, 256, 92], headphone: [0.8, 0.924, 0, 0, 256, 118] },
+    curly: { bow: [1, 1, 14, 4, 256, 0], hat: [0.913, 0.9, 0, 0, 256, 92], headphone: [0.91, 0.939, 0, 0, 256, 118] },
+    straight: { bow: [1, 1, 14, 5, 256, 0], hat: [0.85, 0.875, 0, 0, 256, 92], headphone: [0.8, 0.924, 0, 0, 256, 118] },
+  },
+  g6: {
+    short: { bow: [1, 1, -16, -1, 256, 0], hat: [0.974, 1.025, 0, 0, 256, 97], headphone: [0.87, 1.015, 0, 0, 256, 125] },
+    bob: { bow: [1, 1, -16, 0, 256, 0] },
+    twin: { bow: [1, 1, -16, -4, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 97], headphone: [1.1, 1.059, 0, 0, 256, 125] },
+    pony: { bow: [1, 1, -16, 1, 256, 0], hat: [1.05, 0.975, 0, 0, 256, 97], headphone: [0.992, 0.985, 0, 0, 256, 125] },
+    curly: { bow: [1, 1, -16, -7, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 97], headphone: [1.076, 1.103, 0, 0, 256, 125] },
+    straight: { bow: [1, 1, -16, 0, 256, 0], hat: [0.93, 1.0, 0, 0, 256, 97], headphone: [0.878, 1.0, 0, 0, 256, 125] },
+  },
+  g7: {
+    short: { bow: [1, 1, 5, -11, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 89], headphone: [0.923, 1.2, 0, 0, 256, 112] },
+    bob: { bow: [1, 1, 5, 0, 256, 0] },
+    twin: { bow: [1, 1, 5, 1, 256, 0], hat: [1.05, 0.969, 0, 0, 256, 89], headphone: [1.1, 0.982, 0, 0, 256, 112] },
+    pony: { bow: [1, 1, 5, -1, 256, 0], hat: [1.05, 1.031, 0, 0, 256, 89], headphone: [0.8, 1.018, 0, 0, 256, 112] },
+    curly: { bow: [1, 1, 5, -7, 256, 0], hat: [1.05, 1.05, 0, 0, 256, 89], headphone: [1.1, 1.127, 0, 0, 256, 112] },
+    straight: { bow: [1, 1, 5, -1, 256, 0], hat: [0.967, 1.031, 0, 0, 256, 89], headphone: [0.913, 1.018, 0, 0, 256, 112] },
+  },
+  g8: {
+    short: { bow: [1, 1, 1, 1, 256, 0], hat: [0.85, 0.968, 0, 0, 256, 86], headphone: [0.8, 0.981, 0, 0, 256, 107] },
+    bob: { bow: [1, 1, 1, 0, 256, 0] },
+    twin: { bow: [1, 1, 1, 1, 256, 0], hat: [1.02, 0.968, 0, 0, 256, 86], headphone: [0.8, 0.981, 0, 0, 256, 107] },
+    pony: { bow: [1, 1, 1, 1, 256, 0], hat: [0.911, 0.968, 0, 0, 256, 86], headphone: [0.893, 0.981, 0, 0, 256, 107] },
+    curly: { bow: [1, 1, 1, -13, 256, 0], hat: [1.02, 1.05, 0, 0, 256, 86], headphone: [1.0, 1.2, 0, 0, 256, 107] },
+    straight: { bow: [1, 1, 1, 2, 256, 0], hat: [0.85, 0.935, 0, 0, 256, 86], headphone: [0.8, 0.962, 0, 0, 256, 107] },
+  },
+  g9: {
+    short: { bow: [1, 1, 8, -1, 256, 0], hat: [0.961, 1.024, 0, 0, 256, 90], headphone: [0.8, 1.016, 0, 0, 256, 113] },
+    bob: { bow: [1, 1, 8, 0, 256, 0] },
+    twin: { bow: [1, 1, 8, 5, 256, 0], hat: [1.05, 0.878, 0, 0, 256, 90], headphone: [0.881, 0.922, 0, 0, 256, 113] },
+    pony: { bow: [1, 1, 8, 8, 256, 0], hat: [0.971, 0.85, 0, 0, 256, 90], headphone: [0.847, 0.875, 0, 0, 256, 113] },
+    curly: { bow: [1, 1, 8, 2, 256, 0], hat: [1.0, 0.951, 0, 0, 256, 90], headphone: [0.949, 0.969, 0, 0, 256, 113] },
+    straight: { bow: [1, 1, 8, 6, 256, 0], hat: [0.864, 0.854, 0, 0, 256, 90], headphone: [0.805, 0.906, 0, 0, 256, 113] },
+  },
+};
+export function headFit(file, hair, gradeOrTerm) {
+  const kind = file === "hat_bow" ? "bow" : file === "acc_headphone" ? "headphone" : file.startsWith("hat_") ? "hat" : null;
+  const f = kind && HEAD_FIT[avatarStage(gradeOrTerm)]?.[hair]?.[kind];
+  return f ? { sx: f[0], sy: f[1], dx: f[2], dy: f[3], ox: f[4], oy: f[5] } : null;
+}
 
 // 相對路徑（測試用）；實際載入用 avatarLayerSrc 解析成絕對網址，子路徑部署也正確
 export function avatarLayerUrl(file) {
@@ -220,18 +218,19 @@ export function avatarLayers(input, gradeOrTerm = 4) {
   const a = normalizeAvatar(input);
   const stage = avatarStage(gradeOrTerm);
   const out = [];
-  const push = (file, color, alpha, tint = true, clip = "") => out.push({ file, color, alpha: alpha ?? 1, tint, part: file, clip });
-  if (a.accessory === "backpack") push("acc_backpack", ACC_COLOR.backpack, 0.94);
-  push(`hairback_${a.hair}`, partValue("hairColor", a.hairColor, "#3a2f2a")); // 後髮在身體後面，臉和脖子蓋住中間
+  const push = (file, color, alpha, tint = true, clip = "", fit = null) => out.push({ file, color, alpha: alpha ?? 1, tint, part: file, clip, fit });
+  const own = (file, color, alpha) => push(`${stage}/${file}`, color, alpha, true, "", headFit(file, a.hair, gradeOrTerm)); // 該年級自己那一套
+  if (a.accessory === "backpack") own("acc_backpack", ACC_COLOR.backpack, 0.94);
+  own(`hairback_${a.hair}`, partValue("hairColor", a.hairColor, "#3a2f2a")); // 後髮在身體後面，臉和脖子蓋住中間
   push(`base_${stage}`, "#ffffff", 1, false); // 基本身體自帶膚色，不上色（依年級換身體）
-  push(`bottom_${a.bottom}`, partValue("bottom", a.bottom, "#4a6fa5"));
-  push(`shoes_${a.shoes}`, partValue("shoes", a.shoes, "#eeeeee"));
-  push(`top_${a.top}`, partValue("top", a.top, "#ffffff"));
-  if (a.accessory === "backpack") push("acc_backpack_front", ACC_COLOR.backpack, 0.94); // 背帶壓在上衣前面
+  own(`bottom_${a.bottom}`, partValue("bottom", a.bottom, "#4a6fa5"));
+  own(`shoes_${a.shoes}`, partValue("shoes", a.shoes, "#eeeeee"));
+  own(`top_${a.top}`, partValue("top", a.top, "#ffffff"));
+  if (a.accessory === "backpack") own("acc_backpack_front", ACC_COLOR.backpack, 0.94); // 背帶壓在上衣前面
   push(`base_${stage}`, "#ffffff", 1, false, headClip(gradeOrTerm)); // 頭和臉蓋在領口前面，頭髮再疊上去
-  push(`hair_${a.hair}`, partValue("hairColor", a.hairColor, "#3a2f2a"));
-  if (a.hat !== "none") push(`hat_${a.hat}`, partValue("hat", a.hat, "#e0574f"));
-  if (a.accessory !== "none" && a.accessory !== "backpack") push(`acc_${a.accessory}`, ACC_COLOR[a.accessory] || "#8a5a34");
+  own(`hair_${a.hair}`, partValue("hairColor", a.hairColor, "#3a2f2a"));
+  if (a.hat !== "none") own(`hat_${a.hat}`, partValue("hat", a.hat, "#e0574f"));
+  if (a.accessory !== "none" && a.accessory !== "backpack") own(`acc_${a.accessory}`, ACC_COLOR[a.accessory] || "#8a5a34");
   return out;
 }
 
@@ -243,20 +242,14 @@ export function renderAvatar(input, { size = 150, grade = 4 } = {}) {
       const url = avatarLayerSrc(l.file);
       const isBase = l.file.startsWith("base_");
       const filter = isBase ? SKIN_FILTER[a.skin] || "" : "";
-      // 依年級把衣服縮放／平移（頭髮、帽子跟頭；上衣跟軀幹；褲裙跟腿；鞋子跟腳）
-      let tf = "";
-      if (!isBase) {
-        const t = stageTransform(l.file, grade);
-        if (t.sx !== 1 || t.sy !== 1 || t.dx !== 0 || t.dy !== 0) {
-          const pct = (v) => ((v / 512) * 100).toFixed(2) + "%";
-          tf = ` style="transform-origin:${pct(t.ox)} ${pct(t.oy)};transform:translate(${pct(t.dx)},${pct(t.dy)}) scale(${t.sx.toFixed(3)},${t.sy.toFixed(3)})"`;
-        }
-      }
       const css = (filter ? `filter:${filter};` : "") + (l.clip ? `clip-path:${l.clip};` : "");
       const img = `<img class="av-img" src="${url}" alt=""${css ? ` style="${css}"` : ""}>`;
       const tint = l.tint
         ? `<i class="av-tint" style="background:${l.color};opacity:${l.alpha};-webkit-mask-image:url(${url});mask-image:url(${url})"></i>`
         : "";
+      const f = l.fit;
+      const pct = (v) => ((v / 512) * 100).toFixed(2) + "%";
+      const tf = f ? ` style="transform-origin:${pct(f.ox)} ${pct(f.oy)};transform:translate(${pct(f.dx)},${pct(f.dy)}) scale(${f.sx},${f.sy})"` : "";
       return `<span class="av-layer"${tf}>${img}${tint}</span>`;
     })
     .join("");

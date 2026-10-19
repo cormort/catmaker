@@ -1,44 +1,53 @@
 <!doctype html>
-<!-- tools/avatar_preview.html — 開發用：把換裝圖層排成大圖檢查對齊（用本機伺服器開） -->
+<!-- tools/avatar_preview.html — 開發用：六個年級 × 幾套造型排成大圖檢查對齊（用本機伺服器開）
+     ?g=4,7 只看某些年級；?size=220 改大小；?all=hair（或 top/bottom/shoes/hat/accessory）列出該部位全部選項 -->
 <html lang="zh-Hant">
   <head>
     <meta charset="utf-8" />
     <title>角色圖層預覽</title>
     <link rel="stylesheet" href="../style.css" />
     <style>
-      body { display: block; padding: 16px; }
-      #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 1180px; }
-      .cell { background: #fdf3e3; border: 1px solid #e0c9a0; padding: 4px; }
-      .cell small { display: block; text-align: center; font-size: 12px; color: #7a5c3a; }
+      body { display: block; padding: 8px; }
+      .row { display: flex; gap: 4px; margin-bottom: 4px; }
+      .pv { background: #fdf3e3; border: 1px solid #e0c9a0; padding: 2px; }
+      .pv { flex: none; width: var(--cw); }
+      .pv small { display: block; overflow: hidden; white-space: nowrap; text-align: center; font-size: 11px; color: #7a5c3a; }
     </style>
   </head>
   <body>
     <div id="grid"></div>
     <script type="module">
       window.onerror = (m) => { document.getElementById("grid").textContent = "ERROR: " + m; };
-      let renderAvatar, defaultAvatar, stageLabel;
-      try {
-        ({ renderAvatar, defaultAvatar, stageLabel } = await import("../js/avatar.js?t=" + Date.now()));
-      } catch (e) {
-        document.getElementById("grid").textContent = "IMPORT FAIL: " + e;
-        throw e;
-      }
-      const cfg = { skin: "light", hair: "bob", hairColor: "brown", top: "sailor", bottom: "skirt", shoes: "loafer", hat: "none", accessory: "none" };
+      const { renderAvatar, AVATAR_PARTS } = await import("../js/avatar.js?t=" + Date.now());
+      const q = new URLSearchParams(location.search);
+      const grades = (q.get("g") || "4,5,6,7,8,9").split(",").map(Number);
+      const size = Number(q.get("size") || 150);
+      const base = { skin: "light", hair: "bob", hairColor: "brown", top: "tshirt", bottom: "jeans", shoes: "sneaker", hat: "none", accessory: "none" };
+      const all = q.get("all");
+      const sets = all
+        ? AVATAR_PARTS[all].filter((o) => o.id !== "none").map((o) => ({ ...base, [all]: o.id }))
+        : [
+            { ...base },
+            { ...base, hair: "twin", hairColor: "pink", top: "sailor", bottom: "skirt", shoes: "loafer", hat: "bow" },
+            { ...base, hair: "pony", hairColor: "black", top: "hoodie", bottom: "sport", shoes: "boots", hat: "cap", accessory: "backpack" },
+            { ...base, hair: "straight", hairColor: "blonde", top: "sweater", bottom: "pleat", shoes: "rainboot", hat: "beanie", accessory: "scarf" },
+            { ...base, hair: "curly", hairColor: "blue", top: "shirt", bottom: "shorts", shoes: "sandal", hat: "straw", accessory: "glasses" },
+            { ...base, hair: "short", hairColor: "mint", top: "vest", bottom: "jeans", shoes: "sneaker", hat: "beret", accessory: "headphone" },
+            { ...base, hair: "bob", hairColor: "black", top: "tshirt", bottom: "skirt", shoes: "loafer", accessory: "badge" },
+          ];
       const grid = document.getElementById("grid");
-      grid.style.gridTemplateColumns = "repeat(4, 1fr)";
-      grid.style.width = "1720px";
-      for (const g of [4, 6, 9]) {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        cell.innerHTML = renderAvatar(cfg, { size: 400, grade: g }) + `<small>${g} 年級・全套</small>`;
-        grid.appendChild(cell);
+      grid.style.setProperty("--cw", size + "px");
+      for (const g of grades) {
+        const row = document.createElement("div");
+        row.className = "row";
+        for (const cfg of sets) {
+          const cell = document.createElement("div");
+          cell.className = "pv";
+          cell.innerHTML = renderAvatar(cfg, { size, grade: g }) + `<small>${g} 年級 ${cfg.hair}/${cfg.top}/${cfg.bottom}/${cfg.hat}/${cfg.accessory}</small>`;
+          row.appendChild(cell);
+        }
+        grid.appendChild(row);
       }
-      const bare = document.createElement("div");
-      bare.className = "cell";
-      bare.innerHTML =
-        renderAvatar({ ...cfg, top: "none", bottom: "none", shoes: "none", hair: "none" }, { size: 400, grade: 4 }) +
-        `<small>只有身體（看肩線/腰線/腳底）</small>`;
-      grid.appendChild(bare);
     </script>
   </body>
 </html>

@@ -4,19 +4,26 @@
 //   臉和脖子會蓋住中間，只有頭的兩側、髮絲縫隙、脖子兩旁露出來。
 // - 前髮 hair_<id>.png：補上頭頂沒蓋到的光頭（馬尾頭頂比頭髮大一圈），
 //   短髮、西瓜皮清掉下緣垂到臉頰的細雜線，短髮剪掉捲到右臉頰的髮尾。
-// 用法：node tools/split_avatar_hair.mjs [--fresh] [--dir 資料夾] [id ...]（需要 ImageMagick）
+// 用法：node tools/split_avatar_hair.mjs [--fresh] [--grade N] [--dir 資料夾] [id ...]（需要 ImageMagick）
+//   --grade：哪個年級的身體（預設 4），讀寫 icons/avatar/gN/
 //   --fresh：前髮是 avatar_redraw.py 剛摳出來的新圖，跳過只針對舊圖的修補（清雜線、剪髮尾）
-//   --dir：讀寫別的資料夾（預覽用；身體圖仍讀 icons/avatar/）
+//   --dir：讀寫別的資料夾（預覽用；身體圖仍讀 icons/avatar/base_gN.png）
 //   沒有 --fresh 時請對原始前髮跑一次，髮尾漸淡那步重跑會再淡一次
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { STAGE_METRICS } from "../js/avatar.js";
 
 const AV = fileURLToPath(new URL("../icons/avatar/", import.meta.url));
 const argv = process.argv.slice(2);
 const FRESH = argv.includes("--fresh");
 const dirAt = argv.indexOf("--dir");
-const DIR = dirAt >= 0 ? argv[dirAt + 1].replace(/\/?$/, "/") : AV;
-const ONLY = argv.filter((a, i) => !a.startsWith("--") && !(dirAt >= 0 && i === dirAt + 1));
+const gradeAt = argv.indexOf("--grade");
+const GRADE = gradeAt >= 0 ? Number(argv[gradeAt + 1]) : 4;
+const DIR = dirAt >= 0 ? argv[dirAt + 1].replace(/\/?$/, "/") : `${AV}g${GRADE}/`;
+const ONLY = argv.filter((a, i) => !a.startsWith("--") && !(dirAt >= 0 && i === dirAt + 1) && !(gradeAt >= 0 && i === gradeAt + 1));
+// 下面的列號都是 g4 量的；其他年級頭比較小，照「頭頂到脖子」的比例換算
+const G4 = STAGE_METRICS.g4, GM = STAGE_METRICS[`g${GRADE}`];
+const gy = (y) => Math.round(GM.headTop + ((y - G4.headTop) * (GM.neck - GM.headTop)) / (G4.neck - G4.headTop));
 const W = 512, H = 512;
 const read = (f) => execFileSync("convert", [f, "-depth", "8", "rgba:-"], { maxBuffer: 1 << 24 });
 const write = (f, buf) => execFileSync("convert", ["-size", `${W}x${H}`, "-depth", "8", "rgba:-", f], { input: buf });
@@ -59,7 +66,7 @@ function fillHoles(mask) {
   return out.map((v) => (v ? 0 : 1));
 }
 
-const base = read(`${AV}base_g4.png`);
+const base = read(`${AV}base_g${GRADE}.png`);
 for (const id of ONLY.length ? ONLY : Object.keys(BACK_FILL_TO)) {
   const file = `${DIR}hair_${id}.png`;
   const px = read(file);
@@ -71,7 +78,7 @@ for (const id of ONLY.length ? ONLY : Object.keys(BACK_FILL_TO)) {
     const solid = new Uint8Array(W * H);
     for (let i = 0; i < W * H; i++) solid[i] = A(i) >= 128 ? 1 : 0;
     const keep = grow(grow(solid, 2, 0), 2 + 2, 1);
-    for (let i = STRAY_FROM * W; i < W * H; i++) if (A(i) && !keep[i]) { px[i * 4 + 3] = 0; fixed++; }
+    for (let i = gy(STRAY_FROM) * W; i < W * H; i++) if (A(i) && !keep[i]) { px[i * 4 + 3] = 0; fixed++; }
   }
   const trim = !FRESH && TRIM[id];
   if (trim) {
@@ -86,12 +93,12 @@ for (const id of ONLY.length ? ONLY : Object.keys(BACK_FILL_TO)) {
   // ── 前髮：補頭頂 ──
   const head = (i) => base[i * 4 + 3] > 128;
   const cap = new Uint8Array(W * H);
-  for (let i = 0; i < CAP_LINE * W; i++) if (head(i) && A(i) < 128) cap[i] = 1;
+  for (let i = 0; i < gy(CAP_LINE) * W; i++) if (head(i) && A(i) < 128) cap[i] = 1;
   const hair = new Uint8Array(W * H);
   for (let i = 0; i < W * H; i++) hair[i] = A(i) >= 128 ? 1 : 0;
   // 補的顏色取頭頂附近頭髮的平均亮度
   let sum = 0, cnt = 0;
-  for (let i = 0; i < CAP_LINE * W; i++) if (A(i) === 255) { sum += px[i * 4]; cnt++; }
+  for (let i = 0; i < gy(CAP_LINE) * W; i++) if (A(i) === 255) { sum += px[i * 4]; cnt++; }
   const tone = cnt ? Math.round(sum / cnt) : 235;
   for (let i = 0; i < W * H; i++) {
     if (!cap[i]) continue;
@@ -108,7 +115,7 @@ for (const id of ONLY.length ? ONLY : Object.keys(BACK_FILL_TO)) {
   const sil = new Uint8Array(W * H);
   for (let i = 0; i < W * H; i++) sil[i] = A(i) >= 100 ? 1 : 0;
   const back = fillHoles(sil);
-  const fillTo = BACK_FILL_TO[id] ?? H - 1;
+  const fillTo = id in BACK_FILL_TO ? gy(BACK_FILL_TO[id]) : H - 1;
   // 計算頭部與身體在每一列的左右邊界（避免雙馬尾、馬尾在頭頂上方橫跨天空填滿）
   const bodyL = new Int16Array(H).fill(-1);
   const bodyR = new Int16Array(H).fill(-1);

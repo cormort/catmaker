@@ -1,27 +1,43 @@
-// gen_avatar_redraw.js — 用網頁版 Gemini（Nano Banana）重畫髮型／配件：直接畫在四年級身體上
-// 先跑 python3 tools/avatar_redraw.py ref hair／ref acc／ref hat 產生參考圖（/tmp/avatar_ref/<kind>.png：
-// base_g4 穿淡藍上衣、純綠底；配件、帽子版另外戴棕色妹妹頭、穿深藍短褲）；
-// 每個項目送一次，輸出 /tmp/avatar_gen/<kind>/<id>.png，
-// 再跑 python3 tools/avatar_redraw.py process <kind> 摳圖、對齊（頭髮另外產生後髮）。
+// gen_avatar_redraw.js — 用網頁版 Gemini（Nano Banana）重畫換裝圖層：直接畫在各年級身體上
+// 先跑 python3 tools/avatar_redraw.py ref <kind> --grade N 產生參考圖（/tmp/avatar_ref/gN/<kind>.png：
+// base_gN 穿淡藍上衣＋深藍短褲、戴棕色妹妹頭、純綠底）；
+// 每個項目送一次，輸出 /tmp/avatar_gen/gN/<kind>/<id>.png，
+// 再跑 python3 tools/avatar_redraw.py process <kind> --grade N 摳圖、對齊（頭髮另外產生後髮）。
+// 參考圖的道具衣服用該年級自己那一套，所以照順序：bottom → top → hair → hat、acc、shoes。
 // 用法：~/.local/bin/ego-browser nodejs < tools/gen_avatar_redraw.js
 // 只想重畫其中一類就改 RUN；已經有輸出的項目會跳過，不滿意哪一張就刪掉那張再跑一次。
 const fs = await import("node:fs");
 // 要跑哪些類別。ego-browser 不繼承自訂環境變數，所以直接改這一行：
 // 平常全部 ["hair", "acc", "hat", "shoes"]；只重畫某一類時暫時改成例如 ["shoes"]。
 // 平常全部 ["hair", "acc", "hat", "shoes"]；只重畫某一類時暫時改成例如 ["shoes"]。
-const RUN = ["top", "hat"];
+const RUN = ["bottom"];
+const GRADES = [4, 5, 6, 7, 8, 9]; // 要畫哪些年級
+const AGE = { 4: "10-year-old", 5: "11-year-old", 6: "12-year-old", 7: "13-year-old", 8: "14-year-old", 9: "15-year-old" };
 const LOG = "/tmp/avatar_gen/log_redraw.txt";
 fs.mkdirSync("/tmp/avatar_gen", { recursive: true });
 const log = (m) => fs.appendFileSync(LOG, `[${new Date().toISOString().slice(11, 19)}] ${m}\n`);
 
-// 上衣：重新繪製背心
+// 上衣：key 要跟 AVATAR_PARTS.top 一致
 const TOP = [
+  { key: "tshirt", look: "a plain short-sleeved crew-neck T-shirt" },
+  { key: "hoodie", look: "a cosy zip-up hooded sweatshirt (hoodie) with long sleeves to the wrists, the hood resting flat behind the neck, two drawstrings hanging in front" },
+  { key: "shirt", look: "a neat button-up collared blouse with short puffed sleeves, buttoned all the way down the front" },
+  { key: "sailor", look: "a Japanese school sailor-uniform blouse (セーラー服) with short sleeves, a big square sailor collar with two stripes along its edge, and a neckerchief bow tied at the chest" },
+  { key: "sweater", look: "a soft chunky knit crew-neck sweater with long sleeves to the wrists and ribbed cuffs and hem" },
   {
     key: "vest",
-    look: "a cute Japanese school knit sweater vest (學院風針織背心). It is a sleeveless V-neck vest worn over the upper body, fitting the shoulders and torso neatly. The armholes cleanly reveal the child's arms, and the ribbed hem stops neatly at the waistline right at the top of the shorts (does NOT cover or extend down past the shorts). Symmetrical straight-on front view",
+    look: "a cute Japanese school knit sweater vest (學院風針織背心). It is a sleeveless V-neck vest worn over the upper body, fitting the shoulders and torso neatly. The armholes cleanly reveal the child's arms, and the ribbed hem ends at the waist, just over the waistband of the shorts (it does NOT hang down over the shorts). Symmetrical straight-on front view",
   },
 ];
 
+// 褲裙：key 要跟 AVATAR_PARTS.bottom 一致
+const BOTTOM = [
+  { key: "jeans", look: "a pair of straight-leg long jeans reaching down to the ankles, with a waistband, belt loops and front pockets" },
+  { key: "shorts", look: "a pair of casual cotton shorts ending just above the knees, with a waistband, slim regular fit hugging the hips and thighs (not baggy, not wide-legged)" },
+  { key: "skirt", look: "a pleated school skirt with a waistband, fitted snugly at the waist and hips, hem just above the knees, the crisp pleats flaring only slightly below the hips" },
+  { key: "pleat", look: "a long pleated maxi skirt with a waistband, fitted snugly at the waist and hips, then falling straight down and flaring only slightly toward the hem at the ankles, covering both legs" },
+  { key: "sport", look: "a pair of track pants (jogging trousers) reaching down to the ankles, with an elastic waistband, a stripe down each side and elastic cuffs at the ankles" },
+];
 // 髮型：key 要跟 js/avatar.js 的 AVATAR_PARTS.hair 一致（新增髮型時兩邊都要加）
 const HAIR = [
   {
@@ -94,9 +110,18 @@ const STYLE =
   " The new item is drawn PURE WHITE / very light silver-gray with soft gray cel shading and a clean thin dark-gray outline — no other colours in it at all (the game recolours it later)." +
   " Cute Japanese mobile-game art, the same lineart style as the character. No text, no watermark, no extra objects, no shadow on the background.";
 const RULES = {
+  bottom:
+    " Keep EVERYTHING else exactly the same as the attached image: the same face, hair, cropped light-blue sleeveless top, arms, hands, legs, bare feet, skin, pose, size, position and framing, and the same perfectly flat pure green background." +
+    " The new garment completely replaces the navy shorts (no navy left showing). It is high-waisted: its waistband sits at the natural waist, right at the bottom edge of the cropped light-blue top, covering the belly button (no bare midriff between the top and the waistband)." +
+    " It fits this exact body's proportions at the right size: from the waistband down to the hips it hugs the body closely and is NO wider than the girl's own hips (it never sticks out sideways past the hips or under the arms, and the hands stay in front of it)." +
+    " Trousers and shorts follow the outline of the legs (regular fit, not baggy, not flared); a skirt only flares out gently BELOW the hips." +
+    " Symmetrical straight-on front view, legs in the same place. No shoes, no socks, no belt." +
+    STYLE,
   top:
-    " Keep EVERYTHING else exactly the same as the attached image: the same face, eyes, hair, skin, neck, arms, denim shorts, pose, size, position and framing, and the same perfectly flat pure green background. Only add this garment." +
-    " The vest fits this exact body at the right size and stops at the waistline at the top of the shorts. Symmetrical straight-on front view." +
+    " Keep EVERYTHING else exactly the same as the attached image: the same face, eyes, hair, skin, neck, hands, navy shorts, legs, pose, size, position and framing, and the same perfectly flat pure green background." +
+    " The new garment completely replaces the light-blue sleeveless top (no light blue left showing anywhere). It fits this exact body's shoulders and torso at the right size, and its hem comes down over the waistband of the navy shorts, overlapping it a little (no skin showing between the top and the shorts)." +
+    " Symmetrical straight-on front view, arms in the same place. Bare arms stay bare where the garment has no sleeves." +
+    " Do NOT redraw, restyle, move or resize the girl; the shorts keep exactly the same medium denim-blue colour (do not darken them to navy or black)." +
     STYLE,
   hair:
     " Keep EVERYTHING else exactly the same as the attached image: the same face, eyes, expression, ears, neck, light-blue T-shirt, pose, size, position and framing, and the same perfectly flat pure green background. Only add the hair." +
@@ -116,35 +141,33 @@ const RULES = {
     " Keep EVERYTHING else exactly the same as the attached image: the same legs, knees, skin, pose, size, position and framing, and the same perfectly flat pure green background. Only add these shoes." +
     " Both shoes are actually WORN ON the child's feet and cover the feet completely — no bare toes, no bare heel, no skin showing between the shoe and the leg, and no shoes floating beside or in front of the feet." +
     " The shoes point the same way as the feet (toward the viewer) and are drawn from the same straight-on front view as the legs — not a three-quarter or side view, not a pair of shoes lying on the ground." +
+    " Each shoe is drawn a little LARGER than the bare foot underneath and completely encloses it, so not a single pixel of toe, heel or the side of the foot shows around the shoe; both shoes are the same size and stay exactly where the feet are." +
     " No socks, no other accessories." +
     STYLE,
 };
-const ITEMS = [
-  ...(RUN.includes("top") ? TOP.map((s) => ({ kind: "top", key: s.key, prompt: `Edit the attached image: dress the child in ${s.look}.` })) : []),
-  ...(RUN.includes("hair") ? HAIR.map((s) => ({ kind: "hair", key: s.key, prompt: `Edit the attached image: give this bald chibi child a new hairstyle — ${s.look}.` })) : []),
+const ITEMS0 = GRADES.flatMap((g) => [
+  ...(RUN.includes("bottom") ? BOTTOM.map((s) => ({ kind: "bottom", key: s.key, prompt: `Edit the attached image: dress the ${AGE[g]} girl in ${s.look}.` })) : []),
+  ...(RUN.includes("top") ? TOP.map((s) => ({ kind: "top", key: s.key, prompt: `Edit the attached image: dress the ${AGE[g]} girl in ${s.look}.` })) : []),
+  ...(RUN.includes("hair") ? HAIR.map((s) => ({ kind: "hair", key: s.key, prompt: `Edit the attached image: give this bald ${AGE[g]} girl a new hairstyle — ${s.look}.` })) : []),
   ...(RUN.includes("acc") ? ACC.map((s) => ({ kind: "acc", key: s.key, prompt: `Edit the attached image: add ${s.look}.` })) : []),
-  ...(RUN.includes("hat") ? HAT.map((s) => ({ kind: "hat", key: s.key, prompt: `Edit the attached image: give the child ${s.look}.` })) : []),
-  ...(RUN.includes("shoes") ? SHOES.map((s) => ({ kind: "shoes", key: s.key, prompt: `Edit the attached image: put ${s.look} on the child's feet.` })) : []),
-].map((it) => ({ ...it, ref: `/tmp/avatar_ref/${it.kind}.png`, out: `/tmp/avatar_gen/${it.kind}/${it.key}.png`, prompt: it.prompt + RULES[it.kind] }));
-for (const k of RUN) fs.mkdirSync(`/tmp/avatar_gen/${k}`, { recursive: true });
+  ...(RUN.includes("hat") ? HAT.map((s) => ({ kind: "hat", key: s.key, prompt: `Edit the attached image: give the ${AGE[g]} girl ${s.look}.` })) : []),
+  ...(RUN.includes("shoes") ? SHOES.map((s) => ({ kind: "shoes", key: s.key, prompt: `Edit the attached image: put ${s.look} on the ${AGE[g]} girl's feet.` })) : []),
+].map((it) => ({ ...it, grade: g, ref: `/tmp/avatar_ref/g${g}/${it.kind}.png`, out: `/tmp/avatar_gen/g${g}/${it.kind}/${it.key}.png`, prompt: it.prompt + RULES[it.kind] })));
+const ITEMS = ITEMS0.map((it) => ({ ...it, key: `g${it.grade}/${it.kind}/${it.key}` })); // key 只用在 log
+for (const g of GRADES) for (const k of RUN) fs.mkdirSync(`/tmp/avatar_gen/g${g}/${k}`, { recursive: true });
 
+// 整批共用一個 TaskSpace：第一次建立後把 id 記在 SPACE_FILE，之後每輪都接續同一個（不再認領使用者的分頁）
+const SPACE_FILE = "/tmp/avatar_gen/space_id";
 let task;
 try {
-  task = await claimTaskSpace("gemini redraw");
+  task = await taskSpace(Number(fs.readFileSync(SPACE_FILE, "utf8")));
 } catch {
-  task = await taskSpace("gemini redraw");
+  task = await taskSpace("avatar redraw");
+  fs.writeFileSync(SPACE_FILE, String(task.spaceId));
 }
-const pages = await task.pages();
-let page = pages.find((p) => p.label === "p1");
-if (!page) {
-  const tabs = await task.tabs();
-  const geminiTab = tabs.find((t) => (t.url || "").includes("gemini"));
-  if (geminiTab) {
-    page = await task.adopt(geminiTab.page, { as: "p1" });
-  } else {
-    page = await task.newPage("p1");
-  }
-}
+// 先用已管理的分頁；沒有就認領空間裡現成的分頁（例如使用者交還的 Gemini 分頁），都沒有才開新的
+const tab0 = (await task.tabs())[0];
+const page = (await task.pages())[0] || (tab0 ? await task.adopt(tab0.page) : await task.newPage());
 const wait = (ms) => page.waitForTimeout(ms);
 
 async function newChat() {
@@ -254,9 +277,15 @@ for (const it of ITEMS) {
         break;
       }
       if (i % 4 === 3) log(`${it.key} 等待 ${(i + 1) * 4}s｜回覆文字: ${imgs.text}`);
+      if (/limit resets|用量上限|上限/.test(imgs.text)) break; // 額度用完，再等也不會出圖
     }
     if (!got) {
-      log(`${it.key} ❌ 沒出圖`);
+      const why = await page.evaluate(() => document.querySelector("model-response")?.innerText || "");
+      log(`${it.key} ❌ 沒出圖 ${why.replace(/\s+/g, " ").slice(0, 80)}`);
+      if (/limit resets|上限/.test(why)) {
+        log("Gemini 生圖額度用完，停止（到 gemini.google.com/usage 看重設時間）");
+        break;
+      }
       continue;
     }
     await wait(12000);
@@ -289,4 +318,4 @@ for (const it of ITEMS) {
   }
 }
 log("全部結束");
-await task.finish({ keep: "all" });
+// 不 finish：下一輪（下一類）接著用同一個 TaskSpace；全部畫完再手動 finish

@@ -131,21 +131,38 @@ description: 完整的 2D Q 版紙娃娃（Chibi Avatar）髮型、帽子、配�
 
 ---
 
-## 6. 常用指令與驗證流程
+## 6. 每個年級一整套（Per-grade Layer Sets）
+
+四年級（Q 版大頭）到九年級（接近成人比例）身體差太多，同一張圖層縮放對位一定會穿模或比例怪，所以**每個年級各畫一整套**：
+- 身體 `icons/avatar/base_gN.png`；換裝 `icons/avatar/gN/<部位>.png`（每個年級 39 張：前後髮各 6、上衣 6、褲裙 5、鞋 5、帽 5、配件 5＋背帶）。
+- `js/avatar.js` 的 `avatarLayers` 直接取 `gN/` 那一套，**不做任何 CSS 縮放**；`tests/avatar.test.mjs` 檢查每個年級都齊全、都在 `sw.js` 快取清單。
+- 參考圖的道具衣服、棕色妹妹頭都用**該年級自己那一套**，所以要照順序畫：
+  `bottom`（褲裙）→ `top`（上衣）→ `hair` → `hat`、`acc`、`shoes`。
+- 畫衣服時，參考圖穿淡藍背心＋深藍短褲當道具（不讓 AI 面對裸身），新衣服整件換掉道具；
+  **對位時要忽略被換掉的道具**（`prop_mask`），否則對位會把道具和新圖的其他色塊硬配在一起、整張歪掉。
+- 五官遮罩、後髮填滿線、背帶分界線都依 `STAGE_METRICS` 的頭頂／脖子換算到各年級。
+- Prompt 帶入年齡（四年級 10 歲 … 九年級 15 歲），讓 AI 依該年級身形畫。
+- **褲裙**：參考圖的道具背心剪到腰線（`WAIST`，肚臍上方），AI 才會把腰頭畫在腰上而不是肚臍下；
+  摳圖後腰線以上清掉、胯下以上不能比臀寬（`HIP_PAD`）或身體輪廓還寬（否則會從上衣兩側、手臂和腰之間冒出來），並補小破洞。
+- **鞋子**：`cover_feet` 把鞋子旁邊 14 px 內露出的腳用鞋子顏色補滿描框；處理時若腳踝以下仍有 3% 以上沒蓋到會印 ⚠ 提示重畫（涼鞋除外）。
+- **細線清理**（`drop_thin`，所有類別都會跑；眼鏡除外、涼鞋改成只留腳踝以下）：AI 會沿手臂、膝蓋、下巴描線，這些無彩度細線會被一起摳出來，
+  用開運算去掉；已輸出的圖層可以補跑 `python3 tools/avatar_redraw.py clean --grade N`（之後再跑 split_avatar_hair.mjs 重建後髮）。
+- **眼鏡**：AI 畫的鏡框粗細不一、鏡片裡還會連重畫的眼睛一起摳出來 → 不用摳圖，`draw_glasses()` 以身體原本兩隻眼睛定位，直接畫一副乾淨的圓框眼鏡（半徑＝眼睛區塊 × 1.8）。
+- **帽子／耳機／蝴蝶結 × 髮型**：這三種是畫在該年級「妹妹頭」上的，其他髮型比較扁、窄或寬 → `python3 tools/fit_head_items.py` 量每個年級每種髮型的頭頂高度與太陽穴／耳朵寬度，算出縮放平移寫進 `js/avatar.js` 的 `HEAD_FIT`，`renderAvatar` 套 CSS transform（只有這三種會套，衣服頭髮都不縮放）。重畫頭髮或帽子後要重跑。
+- **背包拆層**：只有軀幹（臀寬範圍）上的背帶在前層，包體側邊放後層，不然會像兩片袖子蓋在手臂上。
+- **身體底圖**：base_gN 原本白色連身衣換膚色時，軀幹兩側留下淡紫灰邊，會從上衣和手臂的縫露出來，已改成膚色（備份在 /tmp/avatar_backup/bases）。
+
+## 7. 常用指令與驗證流程
 
 ```bash
-# 1. 產生參考圖（/tmp/avatar_ref/hair.png）
-python3 tools/avatar_redraw.py ref hair
+# 每一類、每個年級：參考圖 → Gemini → 摳圖
+for g in 4 5 6 7 8 9; do python3 tools/avatar_redraw.py ref bottom --grade $g; done
+# tools/gen_avatar_redraw.js 改 RUN = ["bottom"]、GRADES，然後：
+~/.local/bin/ego-browser nodejs < tools/gen_avatar_redraw.js   # → /tmp/avatar_gen/gN/bottom/<id>.png
+for g in 4 5 6 7 8 9; do python3 tools/avatar_redraw.py process bottom --grade $g; done   # → icons/avatar/gN/
+# 不滿意哪張就刪掉 /tmp/avatar_gen/gN/<kind>/<id>.png 再跑一次 gen（已有的會跳過）
 
-# 2. 自動化驅動瀏覽器生成 raw 圖（/tmp/avatar_gen/hair/<id>.png）
-~/.local/bin/ego-browser nodejs < tools/gen_avatar_redraw.js
-
-# 3. 演算法對位、無孔洞摳圖、前後分層並輸出多色合成預覽
-python3 tools/avatar_redraw.py process hair --preview
-
-# 4. 正式輸出至 icons/avatar/
-python3 tools/avatar_redraw.py process hair
-
-# 5. 全面圖層與年級伸展回歸測試
+# 檢查：六個年級 × 七套造型（?all=top 列出某部位全部選項）
+python3 -m http.server 8765   # 開 http://localhost:8765/tools/avatar_preview.html
 node tests/avatar.test.mjs
 ```
